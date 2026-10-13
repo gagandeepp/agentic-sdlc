@@ -1,0 +1,26 @@
+# USD per million tokens. Source: Anthropic pricing via the claude-api skill (cached 2026-10-06).
+# Cache writes cost input x multiplier; cache reads have their own rate.
+models:
+  claude-opus-5-5:
+    input: 4.00
+    output: 20.00
+    cache_read: 0.20
+    context_window: 1000000
+  claude-sonnet-5-5:
+    input: 2.00
+    output: 10.00
+    cache_read: 0.20
+    context_window: 1000000
+  claude-haiku-5-5:
+    input: 0.10
+    output: 0.50
+    cache_read: 0.01
+    context_window: 1000000
+    long_context:
+      threshold_tokens: 100000
+      input: 0.50
+      output: 2.50
+      cache_read: 0.05
+cache_write_multiplier:
+  ephemeral_5m: 1.25
+  ephemeral_1h: 2.0
