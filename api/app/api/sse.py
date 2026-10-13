@@ -1,7 +1,7 @@
 """Server-Sent Events framing with keep-alive pings.
 
-Events are pumped through a queue so that idle waits can time out (to send a ping) without
-cancelling the underlying subscription generator.
+Events are pumped through a one-slot queue so that idle waits can time out (to send a ping)
+without cancelling the underlying subscription generator.
 """
 
 import asyncio
@@ -24,7 +24,9 @@ def format_event(event: RunEvent) -> str:
 
 
 async def sse_stream(events: AsyncIterator[RunEvent], *, ping_seconds: float) -> AsyncIterator[str]:
-    queue: asyncio.Queue[RunEvent | Exception | None] = asyncio.Queue()
+    # One slot: a client that stops reading stalls the pump, so its bus subscription fills
+    # and overflows (and the browser reconnects to catch up) instead of buffering unboundedly.
+    queue: asyncio.Queue[RunEvent | Exception | None] = asyncio.Queue(maxsize=1)
 
     async def pump() -> None:
         try:

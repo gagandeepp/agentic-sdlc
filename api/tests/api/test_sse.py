@@ -2,9 +2,10 @@ import asyncio
 import json
 from collections.abc import AsyncIterator
 
-from app.api.sse import PING, format_event, sse_stream
-from app.events.bus import SubscriberOverflow
-from app.events.models import EVENT_ADAPTER, RunEvent
+from app.api.sse import PING, RETRY, format_event, sse_stream
+from app.events.bus import EventBus, SubscriberOverflow
+from app.events.models import EVENT_ADAPTER, AgentTextPayload, RunCompletedPayload, RunEvent
+from app.store.mongo import MongoStore, NewRun
 from tests.factories import make_event
 
 
@@ -39,6 +40,23 @@ async def test_stream_pings_while_idle() -> None:
     chunks = await _drain(sse_stream(_from(events, delay=0.35), ping_seconds=0.1))
     assert PING in chunks
     assert chunks[-1] == format_event(events[0])
+
+
+async def test_stalled_client_overflows_the_subscription_instead_of_buffering(
+    store: MongoStore,
+) -> None:
+    bus = EventBus(store, queue_size=2)
+    run = await store.create_run(NewRun(requirement="r", repo="o/r"))
+    stream = sse_stream(bus.subscribe(run.id), ping_seconds=5)
+    assert await anext(stream) == RETRY  # starts the pump; the client then stops reading
+    await asyncio.sleep(0.05)
+    for i in range(20):
+        await bus.emit(run.id, "agent.text", AgentTextPayload(text=str(i)))
+    await bus.emit(run.id, "run.completed", RunCompletedPayload(pr_url=None))
+    rest = await asyncio.wait_for(_drain(stream), 5)
+    frames = [chunk for chunk in rest if chunk.startswith("id: ")]
+    assert 0 < len(frames) < 21  # cut off by overflow, so the browser reconnects and catches up
+    assert not any('"run.completed"' in chunk for chunk in rest)
 
 
 async def test_overflow_ends_the_stream_so_the_browser_reconnects() -> None:
