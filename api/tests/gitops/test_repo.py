@@ -194,3 +194,25 @@ async def test_summary_and_writes_never_follow_symlinks(tmp_path: Path, remote: 
     assert secret.read_text().startswith("AGENT_GITHUB_TOKEN")
     with pytest.raises(ValueError):
         repo.write_file("../escape.md", "x")
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        ".github/workflows/é.yml",  # git quotes non-ASCII names in plain --name-only output
+        ".github/actions/setup/action.yml",  # composite actions run in CI too
+        ".GitHub/workflows/ci.yml",
+    ],
+)
+async def test_push_refuses_any_ci_configuration_however_it_is_named(
+    tmp_path: Path, remote: str, path: str
+) -> None:
+    repo = await _clone(tmp_path, remote)
+    base = await repo.head()
+    await repo.start_branch("sdlc/run_1", base)
+    target = repo.worktree / path
+    target.parent.mkdir(parents=True)
+    target.write_text("on: push\n")
+    await repo.commit_all("ci")
+    with pytest.raises(PushRefused, match="workflows"):
+        await repo.push("sdlc/run_1", base=base, expected=None)

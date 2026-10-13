@@ -22,7 +22,9 @@ from pydantic import SecretStr
 
 GIT_DIR_MODE = 0o2750
 GIT_FILE_MODE = 0o640
-WORKFLOWS_PREFIX = ".github/workflows/"
+# Workflows and composite actions under .github/ run in CI with the repository's secrets.
+# Matched by pathspec, case-insensitively, on raw (-z) names: no path quoting to get around.
+CI_PATHSPEC = ":(icase).github"
 SKIP_DIRS = frozenset(
     {".git", "node_modules", ".venv", "__pycache__", ".pytest_cache", "dist", "build"}
 )
@@ -281,6 +283,15 @@ class RunRepo:
         out = (await self._run("diff", "--name-only", "--no-renames", base, "HEAD")).out
         return [line for line in out.splitlines() if line]
 
+    async def ci_changes(self, base: str) -> list[str]:
+        """Changed paths under .github/ (any case) between `base` and HEAD."""
+        out = (
+            await self._run(
+                "diff", "--name-only", "--no-renames", "-z", base, "HEAD", "--", CI_PATHSPEC
+            )
+        ).out
+        return [path for path in out.split("\0") if path]
+
     async def diff_against(self, base: str, max_bytes: int) -> str:
         out = (
             await self._run("diff", "--no-color", "--no-ext-diff", "--no-textconv", base, "HEAD")
@@ -295,9 +306,12 @@ class RunRepo:
         """Push HEAD to `branch` if the remote branch is still at `expected` (None: absent)."""
         if await self.current_branch() != branch:
             raise PushRefused(f"HEAD is not on {branch}")
-        workflows = [p for p in await self.changed_files(base) if p.startswith(WORKFLOWS_PREFIX)]
-        if workflows:
-            raise PushRefused("the change touches CI workflows: " + ", ".join(workflows))
+        ci = await self.ci_changes(base)
+        if ci:
+            raise PushRefused(
+                "the change touches CI configuration (workflows and actions under .github/): "
+                + ", ".join(ci)
+            )
         lease = f"--force-with-lease=refs/heads/{branch}:{expected or ''}"
         await self._run(
             "push", "--quiet", lease, "origin", f"HEAD:refs/heads/{branch}", network=True
