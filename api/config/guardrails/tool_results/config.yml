@@ -1,0 +1,11 @@
+# Tool output entering an agent's context (PostToolUse hook): indirect prompt injection.
+rails:
+  config:
+    injection_detection:
+      injections:
+        - prompt_injection
+      action: reject
+      yara_path: __YARA_DIR__
+  output:
+    flows:
+      - injection detection

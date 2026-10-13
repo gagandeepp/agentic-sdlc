@@ -16,6 +16,7 @@ from pymongo.errors import PyMongoError
 from app.api.runs import router as runs_router
 from app.dev.routes import router as dev_router
 from app.events.bus import EventBus
+from app.guardrails.service import GuardrailsService, GuardrailsUnavailable
 from app.llm.pricing import load_pricing
 from app.llm.proxy import create_proxy_app
 from app.llm.registry import ProxyRegistry
@@ -53,12 +54,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             port=settings.proxy_port,
         )
         await proxy.start()
+        guardrails = GuardrailsService()
+        try:
+            await guardrails.self_test()
+        except GuardrailsUnavailable as exc:
+            log.error("guardrails failed their self-test (%s); agent commands will be denied", exc)
         app.state.mongo = client
         app.state.store = store
         app.state.bus = bus
         app.state.http = http
         app.state.registry = registry
         app.state.proxy = proxy
+        app.state.guardrails = guardrails
         app.state.background_tasks = background
         try:
             yield
