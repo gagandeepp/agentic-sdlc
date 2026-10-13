@@ -13,8 +13,13 @@ const TONE: Record<Tone, string> = {
 
 const time = (ts: string) => new Date(ts).toLocaleTimeString([], { hour12: false })
 
+/** How close to the bottom (px) still counts as "reading the latest events". */
+const PIN_THRESHOLD = 48
+
 export function Timeline({ events, follow = true }: { events: RunEvent[]; follow?: boolean }) {
   const parentRef = useRef<HTMLDivElement>(null)
+  // Follow the tail only while the reader is at the bottom; scrolling up to read stops it.
+  const pinnedRef = useRef(true)
   const virtualizer = useVirtualizer({
     count: events.length,
     getScrollElement: () => parentRef.current,
@@ -23,16 +28,22 @@ export function Timeline({ events, follow = true }: { events: RunEvent[]; follow
     initialRect: { width: 380, height: 640 },
   })
 
+  const onScroll = () => {
+    const el = parentRef.current
+    if (el) pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < PIN_THRESHOLD
+  }
+
   useEffect(() => {
-    if (follow && events.length > 0) virtualizer.scrollToIndex(events.length - 1, { align: 'end' })
-  }, [follow, events.length, virtualizer])
+    const el = parentRef.current
+    if (follow && pinnedRef.current && el) el.scrollTop = el.scrollHeight
+  }, [follow, events.length])
 
   if (events.length === 0) {
     return <p className="p-4 text-sm text-slate-500">Waiting for events…</p>
   }
 
   return (
-    <div ref={parentRef} role="log" aria-label="Run timeline" className="h-full overflow-auto">
+    <div ref={parentRef} onScroll={onScroll} role="log" aria-label="Run timeline" className="h-full overflow-auto">
       <ol className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => {
           const event = events[item.index]!
