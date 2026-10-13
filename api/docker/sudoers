@@ -1,0 +1,4 @@
+# The API user may run commands as the unprivileged agent user (never as root).
+# umask 0002 keeps agent-created files group-writable for the shared sdlc group.
+Defaults:appuser !requiretty, !lecture, umask=0002
+appuser ALL=(agent) NOPASSWD: ALL

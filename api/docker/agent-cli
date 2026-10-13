@@ -1,0 +1,45 @@
+#!/usr/local/bin/python3
+"""Run the bundled Claude Code CLI as the unprivileged `agent` user.
+
+The Agent SDK hands the CLI the API process's whole environment; this wrapper is the SDK's
+`cli_path`, so only what an agent session needs crosses the uid boundary.
+"""
+
+import os
+import sys
+
+EXACT = {
+    "LANG",
+    "PWD",
+    "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+}
+WRAPPER_ONLY = {"CLAUDE_AGENT_REAL_CLI"}
+
+
+def allowed(name: str) -> bool:
+    return name in EXACT or (name.startswith("CLAUDE_") and name not in WRAPPER_ONLY)
+
+
+def main() -> None:
+    real_cli = os.environ["CLAUDE_AGENT_REAL_CLI"]
+    env = {name: value for name, value in os.environ.items() if allowed(name)}
+    env.update(
+        HOME="/work/agent-home",
+        PATH="/usr/local/bin:/usr/bin:/bin",
+        GIT_CONFIG_COUNT="1",
+        GIT_CONFIG_KEY_0="safe.directory",
+        GIT_CONFIG_VALUE_0="*",
+    )
+    os.umask(0o002)
+    assignments = [f"{name}={value}" for name, value in env.items()]
+    command = ["/usr/bin/env", "-i", *assignments, real_cli, *sys.argv[1:]]
+    if os.environ.get("AGENT_CLI_NO_SUDO") != "1":
+        user = os.environ.get("AGENT_USER", "agent")
+        command = ["/usr/bin/sudo", "-n", "-u", user, "--", *command]
+    os.execv(command[0], command)
+
+
+if __name__ == "__main__":
+    main()
