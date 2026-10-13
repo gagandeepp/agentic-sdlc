@@ -40,6 +40,10 @@ async def guardrails() -> GuardrailsService:
         ("Glob", {"pattern": "**/../../*"}, "outside-workspace"),
         ("Glob", {"pattern": "../../*", "path": "src"}, "outside-workspace"),
         ("Glob", {"pattern": "{../outside.txt,x}"}, "outside-workspace"),
+        ("Glob", {"pattern": "{/etc/passwd,x}"}, "outside-workspace"),
+        ("Glob", {"pattern": "{x,~/.ssh/*}"}, "outside-workspace"),
+        ("Glob", {"pattern": "{src/a,{b,/etc/*}}"}, "outside-workspace"),
+        ("Glob", {"pattern": "{a,b}" * 7}, "glob-too-complex"),
         ("Write", {"file_path": ".github/workflows/ci.yml", "content": "x"}, "workflow-file"),
         (
             "Edit",
@@ -65,6 +69,8 @@ def test_file_tools_are_confined_to_the_workspace(
         ("Glob", {"pattern": "**/*.py"}),
         ("Glob", {"pattern": "*.py", "path": "src"}),
         ("Glob", {"pattern": "src/[a-z]*.py"}),
+        ("Glob", {"pattern": "**/*.{ts,tsx}"}),
+        ("Glob", {"pattern": "{src,tests}/**/*.py"}),
         ("Grep", {"pattern": "def "}),
         ("StructuredOutput", {"summary": "x"}),  # internal and unknown tools are allowed
     ],

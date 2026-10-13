@@ -7,7 +7,8 @@ role's `tools` list already limits what exists, and this layer only adds denials
 import json
 import os
 import re
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Iterator, Mapping
+from itertools import islice
 from pathlib import Path
 from typing import Any, cast
 
@@ -30,9 +31,8 @@ _PATH_FIELDS = {
 }
 _WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 _DETAIL_LIMIT = 300
-_GLOB_META = re.compile(r"[*?\[{]")
-# A ".." segment anywhere in a glob, including inside {a,b} alternatives.
-_PARENT_SEGMENT = re.compile(r"(?:^|[/{,])\.\.(?:$|[/},])")
+_GLOB_META = re.compile(r"[*?\[]")
+_MAX_GLOB_ALTERNATIVES = 64
 
 UNTRUSTED_WARNING = (
     "agentic-sdlc guardrails: the previous tool result contains text that looks like an "
@@ -44,6 +44,34 @@ def _inside(path: Path, workspace: Path) -> bool:
     return os.path.commonpath([path, workspace]) == str(workspace)
 
 
+def _expand_braces(pattern: str) -> Iterator[str]:
+    """Lazily expand {a,b} alternatives (nested too), as the Glob tool does before matching."""
+    depth = start = 0
+    for index, char in enumerate(pattern):
+        if char == "{":
+            start = index if depth == 0 else start
+            depth += 1
+        elif char == "}" and depth:
+            depth -= 1
+            if depth == 0:
+                head, tail = pattern[:start], pattern[index + 1 :]
+                for option in _split_options(pattern[start + 1 : index]):
+                    yield from _expand_braces(head + option + tail)
+                return
+    yield pattern
+
+
+def _split_options(body: str) -> list[str]:
+    options, level, last = [], 0, 0
+    for index, char in enumerate(body):
+        level += {"{": 1, "}": -1}.get(char, 0)
+        if char == "," and level == 0:
+            options.append(body[last:index])
+            last = index + 1
+    options.append(body[last:])
+    return options
+
+
 def evaluate_path(tool_name: str, tool_input: Mapping[str, Any], workspace: Path) -> Verdict:
     field = _PATH_FIELDS.get(tool_name)
     if field is None:
@@ -52,13 +80,17 @@ def evaluate_path(tool_name: str, tool_input: Mapping[str, Any], workspace: Path
     candidates = [base] if base else []
     if tool_name == "Glob":
         pattern = str(tool_input.get("pattern", ""))
-        if _PARENT_SEGMENT.search(pattern):
-            return Verdict(allowed=False, rules=("outside-workspace",))
-        prefix = _GLOB_META.split(pattern, maxsplit=1)[0]
-        if prefix:
-            # An absolute prefix replaces the base directory, as it does for the glob itself.
-            expanded = os.path.expanduser(prefix)
-            candidates.append(os.path.join(os.path.expanduser(base), expanded))
+        alternatives = list(islice(_expand_braces(pattern), _MAX_GLOB_ALTERNATIVES + 1))
+        if len(alternatives) > _MAX_GLOB_ALTERNATIVES:
+            return Verdict(allowed=False, rules=("glob-too-complex",))
+        for alternative in alternatives:
+            if ".." in alternative.split("/"):
+                return Verdict(allowed=False, rules=("outside-workspace",))
+            prefix = _GLOB_META.split(alternative, maxsplit=1)[0]
+            if prefix:
+                # An absolute prefix replaces the base directory, as it does for the glob itself.
+                expanded = os.path.expanduser(prefix)
+                candidates.append(os.path.join(os.path.expanduser(base), expanded))
     root = Path(os.path.realpath(workspace))
     for raw in candidates:
         target = Path(os.path.expanduser(raw))
