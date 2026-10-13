@@ -35,6 +35,7 @@ def settings(mongo_uri: str, tmp_path: Path) -> Settings:
         enable_dev_routes=True,
         sse_ping_seconds=0.2,
         workspace_root=tmp_path / "work",
+        ci_poll_interval_s=0.01,
     )
 
 
