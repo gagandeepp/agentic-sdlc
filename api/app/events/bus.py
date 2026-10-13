@@ -19,8 +19,13 @@ from app.events.models import (
     ContractModel,
     Phase,
     RunEvent,
+    RunStatus,
 )
 from app.store.mongo import MongoStore
+
+_FINISHED = frozenset(
+    {RunStatus.COMPLETED, RunStatus.FAILED, RunStatus.ABORTED, RunStatus.INTERRUPTED}
+)
 
 
 class SubscriberOverflow(Exception):
@@ -78,6 +83,9 @@ class EventBus:
         subscriber = _Subscriber(self._queue_size)
         async with self._locks[run_id]:
             self._subscribers[run_id].add(subscriber)
+            # Read under the lock so the status agrees with what is stored at registration.
+            run = await self._store.get_run(run_id)
+            finished = run is None or run.status in _FINISHED
         last = after_seq
         try:
             async for event in self._store.list_events_after(run_id, after_seq):
@@ -85,6 +93,10 @@ class EventBus:
                 last = event.seq
                 if event.type in TERMINAL_EVENT_TYPES:
                     return
+            if finished:
+                # The terminal event is at or before after_seq (a client resuming after the
+                # end); nothing else will arrive, so end instead of waiting forever.
+                return
             while True:
                 if subscriber.overflowed and subscriber.queue.empty():
                     raise SubscriberOverflow(run_id)

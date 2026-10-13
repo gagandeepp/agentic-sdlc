@@ -62,6 +62,15 @@ async def test_subscribe_resumes_after_a_given_seq(store: MongoStore) -> None:
     assert await _collect(bus, run, after=2) == [3, 4, 5]
 
 
+async def test_resuming_after_the_terminal_event_ends_instead_of_hanging(store: MongoStore) -> None:
+    bus = EventBus(store)
+    run = await store.create_run(NEW)
+    await _text(bus, run)
+    await _complete(bus, run)
+    # A client that already saw the final event reconnects with Last-Event-ID = 2.
+    assert await asyncio.wait_for(_collect(bus, run, after=2), 2) == []
+
+
 async def test_concurrent_emits_reach_a_subscriber_in_order(store: MongoStore) -> None:
     bus = EventBus(store)
     run = await store.create_run(NEW)
