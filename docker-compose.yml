@@ -1,7 +1,8 @@
+# Ports bind to loopback only: Mongo has no auth and the API has dev routes enabled.
 services:
   mongo:
     image: mongo:8.0
-    ports: ["27017:27017"]
+    ports: ["127.0.0.1:27017:27017"]
     volumes: [mongo-data:/data/db]
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
@@ -18,14 +19,14 @@ services:
       MONGO_URI: mongodb://mongo:27017
       MONGO_DB: agentic_sdlc
       ENABLE_DEV_ROUTES: "true"
-    ports: ["8080:8080"]
+    ports: ["127.0.0.1:8080:8080"]
     depends_on:
       mongo:
         condition: service_healthy
 
   web:
     build: ./web
-    ports: ["5173:80"]
+    ports: ["127.0.0.1:5173:80"]
     depends_on: [api]
 
 volumes:
