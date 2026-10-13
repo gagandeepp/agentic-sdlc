@@ -36,6 +36,7 @@ def settings(mongo_uri: str, tmp_path: Path) -> Settings:
         sse_ping_seconds=0.2,
         workspace_root=tmp_path / "work",
         ci_poll_interval_s=0.01,
+        scripted_agent_delay_s=0.0,
     )
 
 

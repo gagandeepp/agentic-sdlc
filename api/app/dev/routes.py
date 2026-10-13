@@ -11,6 +11,7 @@ from app.dev.fake_run import FAKE_BUDGET_USD, FAKE_REPO, FAKE_REQUIREMENT, play_
 from app.dev.probe import ProbeUnavailable, execute_probe, prepare_probe
 from app.events.bus import EventBus
 from app.events.models import Role
+from app.orchestrator.manager import RunManager, RunRejected
 from app.store.mongo import MongoStore, NewRun, RunRecord
 
 log = logging.getLogger(__name__)
@@ -65,3 +66,17 @@ async def start_fake_run(
     )
     _track(request, asyncio.create_task(play_fake_run(bus, run.id, speed=speed)))
     return run
+
+
+class ScriptedRunRequest(BaseModel):
+    requirement: str = Field(min_length=1, max_length=4000)
+
+
+@router.post("/scripted-runs", status_code=201)
+async def start_scripted_run(request: Request, body: ScriptedRunRequest) -> RunRecord:
+    """The real pipeline with scripted agents, a local git remote and an in-memory GitHub."""
+    manager: RunManager = request.app.state.manager
+    try:
+        return await manager.start_scripted(body.requirement.strip())
+    except RunRejected as exc:
+        raise HTTPException(status_code=exc.status, detail=exc.detail) from exc

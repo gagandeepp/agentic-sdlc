@@ -38,3 +38,8 @@ class Settings(BaseSettings):
     ci_poll_interval_s: float = 15.0
     ci_poll_timeout_s: float = 600.0
     max_diff_bytes: int = 60_000
+    default_repo: str = "gagandeepp/agentic-sdlc-sandbox"
+    github_api_url: str = "https://api.github.com"
+    github_clone_base: str = "https://github.com"
+    max_concurrent_runs: int = 1
+    scripted_agent_delay_s: float = 1.0  # keyless demo runs: time for the GUI to show each agent
