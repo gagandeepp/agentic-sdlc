@@ -171,3 +171,11 @@ async def test_slow_subscriber_overflows_and_must_reconnect(store: MongoStore) -
         async for event in stream:
             rest.append(event.seq)
     assert [first.seq, *rest] == [1, 2, 3]
+
+
+async def test_events_after_a_final_event_are_dropped(store: MongoStore) -> None:
+    bus = EventBus(store)
+    run = await store.create_run(NEW)
+    await _complete(bus, run)
+    assert await bus.emit(run.id, "agent.text", AgentTextPayload(text="late usage")) is None
+    assert [e.type async for e in store.list_events_after(run.id)] == ["run.completed"]

@@ -8,9 +8,38 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal, get_args
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 TOOL_RESULT_LIMIT_BYTES = 16_384
+TRUNCATION_MARK = "...[truncated]"
+
+
+def _clip(text: str, limit: int = TOOL_RESULT_LIMIT_BYTES) -> tuple[str, int | None]:
+    """Cap `text` to `limit` UTF-8 bytes; return it and the original size when it was cut.
+
+    "replace" turns lone surrogates (seen in decoded CLI output) into "?" instead of raising.
+    """
+    raw = text.encode("utf-8", "replace")
+    if len(raw) <= limit:
+        return raw.decode(), None
+    return raw[:limit].decode(errors="ignore"), len(raw)
+
+
+def _cap_strings(value: Any) -> tuple[Any, bool]:
+    """Cap every string in a JSON-like value; report whether anything was cut."""
+    if isinstance(value, str):
+        mark = len(TRUNCATION_MARK.encode())
+        clipped, original = _clip(value, TOOL_RESULT_LIMIT_BYTES - mark)
+        if original is None:
+            return _clip(value)[0], False
+        return clipped + TRUNCATION_MARK, True
+    if isinstance(value, dict):
+        pairs = {key: _cap_strings(item) for key, item in value.items()}
+        return {key: item for key, (item, _) in pairs.items()}, any(c for _, c in pairs.values())
+    if isinstance(value, list):
+        items = [_cap_strings(item) for item in value]
+        return [item for item, _ in items], any(c for _, c in items)
+    return value, False
 
 
 class Phase(StrEnum):
@@ -135,6 +164,19 @@ class AgentToolCallPayload(ContractModel):
     tool_use_id: str
     name: str
     input: dict[str, Any]
+    input_truncated: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def _cap_input(cls, data: Any) -> Any:
+        if not isinstance(data, dict) or not isinstance(data.get("input"), dict):
+            return data
+        capped, truncated = _cap_strings(data["input"])
+        return {
+            **data,
+            "input": capped,
+            "input_truncated": bool(data.get("input_truncated")) or truncated,
+        }
 
 
 class AgentToolResultPayload(ContractModel):
@@ -144,27 +186,25 @@ class AgentToolResultPayload(ContractModel):
     truncated: bool = False
     original_size: int | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _cap_content(cls, data: Any) -> Any:
+        if not isinstance(data, dict) or not isinstance(data.get("content"), str):
+            return data
+        content, original = _clip(data["content"])
+        # Re-validating a stored (already capped) event keeps its flags and original size.
+        return {
+            **data,
+            "content": content,
+            "truncated": bool(data.get("truncated")) or original is not None,
+            "original_size": data.get("original_size") or original,
+        }
+
     @classmethod
     def from_content(
-        cls,
-        tool_use_id: str,
-        content: str,
-        *,
-        is_error: bool = False,
-        limit: int = TOOL_RESULT_LIMIT_BYTES,
+        cls, tool_use_id: str, content: str, *, is_error: bool = False
     ) -> "AgentToolResultPayload":
-        raw = content.encode()
-        if len(raw) <= limit:
-            return cls(tool_use_id=tool_use_id, is_error=is_error, content=content)
-        # errors="ignore" drops a multi-byte character cut in half at the limit
-        clipped = raw[:limit].decode(errors="ignore")
-        return cls(
-            tool_use_id=tool_use_id,
-            is_error=is_error,
-            content=clipped,
-            truncated=True,
-            original_size=len(raw),
-        )
+        return cls(tool_use_id=tool_use_id, is_error=is_error, content=content)
 
 
 class AgentUsagePayload(ContractModel):
@@ -457,6 +497,8 @@ RunEvent = Annotated[
 EVENT_ADAPTER: TypeAdapter[RunEvent] = TypeAdapter(RunEvent)
 EVENT_CLASSES: tuple[type[EventBase], ...] = get_args(get_args(RunEvent)[0])
 TERMINAL_EVENT_TYPES = frozenset({"run.completed", "run.failed", "run.aborted", "run.interrupted"})
+# Events after which nothing more may be recorded for a run (unlike run.interrupted).
+FINAL_EVENT_TYPES = frozenset({"run.completed", "run.failed", "run.aborted"})
 
 
 def _payload_index() -> dict[str, type[ContractModel]]:

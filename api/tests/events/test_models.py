@@ -6,6 +6,7 @@ from app.events.models import (
     PAYLOAD_BY_TYPE,
     TERMINAL_EVENT_TYPES,
     TOOL_RESULT_LIMIT_BYTES,
+    TRUNCATION_MARK,
     AgentToolResultPayload,
     AgentUsageEvent,
 )
@@ -86,3 +87,56 @@ def test_truncation_never_splits_a_multibyte_character() -> None:
     payload.content.encode("utf-8")  # must not raise
     assert payload.truncated is True
     assert set(payload.content) == {"é"}
+
+
+BIG = "x" * 50_000
+
+
+def test_tool_result_cap_is_enforced_by_the_type() -> None:
+    event = make_event("agent.tool_result", {"tool_use_id": "t", "is_error": False, "content": BIG})
+    assert event.payload.truncated is True
+    assert event.payload.original_size == 50_000
+    assert len(event.payload.content.encode()) <= TOOL_RESULT_LIMIT_BYTES
+
+
+def test_capped_events_round_trip_unchanged() -> None:
+    result = make_event(
+        "agent.tool_result", {"tool_use_id": "t", "is_error": False, "content": BIG}
+    )
+    call = make_event(
+        "agent.tool_call", {"tool_use_id": "t", "name": "Write", "input": {"content": BIG}}
+    )
+    for event in (result, call):
+        assert EVENT_ADAPTER.validate_json(EVENT_ADAPTER.dump_json(event)) == event
+
+
+def test_lone_surrogates_are_replaced_instead_of_raising() -> None:
+    payload = AgentToolResultPayload.from_content("t", "ok \ud83d tail")
+    assert payload.content == "ok ? tail"
+    EVENT_ADAPTER.dump_json(make_event("agent.tool_result", payload.model_dump()))
+
+
+def test_tool_call_input_strings_are_capped_recursively() -> None:
+    event = make_event(
+        "agent.tool_call",
+        {
+            "tool_use_id": "t",
+            "name": "Edit",
+            "input": {"file_path": "a.py", "edits": [{"old_string": BIG, "new_string": "z"}]},
+        },
+    )
+    payload = event.payload
+    assert payload.input_truncated is True
+    capped = payload.input["edits"][0]["old_string"]
+    assert capped.endswith(TRUNCATION_MARK)
+    assert len(capped.encode()) <= TOOL_RESULT_LIMIT_BYTES
+    assert payload.input["file_path"] == "a.py"
+    assert payload.input["edits"][0]["new_string"] == "z"
+
+
+def test_small_tool_call_is_untouched() -> None:
+    event = make_event(
+        "agent.tool_call", {"tool_use_id": "t", "name": "Bash", "input": {"command": "ls"}}
+    )
+    assert event.payload.input == {"command": "ls"}
+    assert event.payload.input_truncated is False
