@@ -2,10 +2,13 @@ import { useMemo, useState } from 'react'
 import { useParams } from 'react-router'
 import { useRunEvents } from '../../hooks/useRunEvents'
 import { useRunStore } from '../../store/runStore'
+import { GatePanel } from '../gates/GatePanel'
 import { filterEvents } from '../timeline/describeEvent'
 import { Timeline } from '../timeline/Timeline'
 import { AgentCards } from './AgentCards'
+import { ArtifactsList } from './ArtifactsList'
 import { MetricsStrip } from './MetricsStrip'
+import { RunControls } from './RunControls'
 
 export function RunPage() {
   const { runId = '' } = useParams()
@@ -17,6 +20,10 @@ export function RunPage() {
   const events = useMemo(
     () => filterEvents(run.timeline, { agentId: agentFilter, hideUsage }),
     [run.timeline, agentFilter, hideUsage],
+  )
+  const artifactVersion = useMemo(
+    () => run.timeline.filter((e) => e.type === 'artifact.created' || e.type === 'artifact.revised').length,
+    [run.timeline],
   )
 
   if (connection === 'not_found') {
@@ -34,6 +41,7 @@ export function RunPage() {
         <h1 className="text-lg font-semibold">{run.requirement ?? runId}</h1>
         <span className="rounded bg-slate-800 px-2 py-0.5 text-xs">{run.status}</span>
         {run.phase && <span className="text-xs text-slate-400">phase: {run.phase}</span>}
+        <RunControls runId={runId} status={run.status} />
         {connection === 'reconnecting' && (
           <span role="status" className="text-xs text-amber-300">
             reconnecting…
@@ -47,7 +55,9 @@ export function RunPage() {
       </header>
       <div className="grid min-h-0 grid-cols-[1fr_380px]">
         <div className="overflow-auto p-6">
+          {run.openGate && <GatePanel key={run.openGate.payload.gate_id} runId={runId} gate={run.openGate} />}
           <AgentCards agents={run.agents} order={run.agentOrder} activeId={run.activeAgentId} />
+          <ArtifactsList runId={runId} version={artifactVersion} />
         </div>
         <aside className="flex min-h-0 flex-col border-l border-slate-800">
           <div className="flex items-center gap-3 border-b border-slate-800 px-4 py-2 text-xs text-slate-400">
