@@ -11,6 +11,7 @@ from testcontainers.community.mongodb import MongoDbContainer
 
 from app.main import create_app
 from app.settings import Settings
+from app.store.mongo import MongoStore
 
 
 @pytest.fixture(scope="session")
@@ -48,3 +49,14 @@ async def app(settings: Settings) -> AsyncIterator[FastAPI]:
 async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
+
+
+@pytest.fixture
+async def store(mongo_uri: str) -> AsyncIterator[MongoStore]:
+    client: AsyncMongoClient[dict[str, Any]] = AsyncMongoClient(mongo_uri, tz_aware=True)
+    name = f"test_{uuid.uuid4().hex[:8]}"
+    mongo_store = MongoStore(client[name])
+    await mongo_store.ensure_indexes()
+    yield mongo_store
+    await client.drop_database(name)
+    await client.close()
