@@ -158,4 +158,5 @@ def test_interrupted_carries_a_checkpoint_and_gates_list_their_actions() -> None
 
 def test_only_completed_failed_and_aborted_end_a_run() -> None:
     assert TERMINAL_EVENT_TYPES == {"run.completed", "run.failed", "run.aborted"}
-    assert list(Checkpoint)[0] is Checkpoint.CLONED and list(Checkpoint)[-1] is Checkpoint.DONE
+    order = list(Checkpoint)
+    assert (order[0], order[-1]) == (Checkpoint.CLONED, Checkpoint.DONE)
