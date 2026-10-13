@@ -1,4 +1,4 @@
-.PHONY: up down fmt lint test
+.PHONY: up down fmt lint test types
 
 # corepack ships with Node and honours web/package.json's packageManager pin
 PNPM ?= corepack pnpm
@@ -19,3 +19,7 @@ lint:
 test:
 	cd api && uv run pytest
 	cd web && $(PNPM) test
+
+types:
+	cd api && uv run python -m app.schema > ../web/src/types/api.schema.json
+	cd web && $(PNPM) gen:types

@@ -46,3 +46,21 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: docker compose build
+
+  generated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: cd api && uv sync --frozen
+      - run: cd web && pnpm install --frozen-lockfile
+      - run: make types PNPM=pnpm
+      - run: git diff --exit-code -- web/src/types

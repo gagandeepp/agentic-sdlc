@@ -1,0 +1,2697 @@
+{
+  "$defs": {
+    "AgentFinishedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/AgentFinishedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "agent.finished",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "AgentFinishedEvent",
+      "type": "object"
+    },
+    "AgentFinishedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_ms": {
+          "type": "integer"
+        },
+        "num_turns": {
+          "type": "integer"
+        },
+        "ok": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ok",
+        "num_turns",
+        "duration_ms"
+      ],
+      "title": "AgentFinishedPayload",
+      "type": "object"
+    },
+    "AgentStartedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/AgentStartedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "agent.started",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "AgentStartedEvent",
+      "type": "object"
+    },
+    "AgentStartedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "task_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "role",
+        "model",
+        "task_id"
+      ],
+      "title": "AgentStartedPayload",
+      "type": "object"
+    },
+    "AgentTextEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/AgentTextPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "agent.text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "AgentTextEvent",
+      "type": "object"
+    },
+    "AgentTextPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "AgentTextPayload",
+      "type": "object"
+    },
+    "AgentThinkingEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/AgentThinkingPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "agent.thinking",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "AgentThinkingEvent",
+      "type": "object"
+    },
+    "AgentThinkingPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "AgentThinkingPayload",
+      "type": "object"
+    },
+    "AgentToolCallEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/AgentToolCallPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "agent.tool_call",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "AgentToolCallEvent",
+      "type": "object"
+    },
+    "AgentToolCallPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "input": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        },
+        "tool_use_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool_use_id",
+        "name",
+        "input"
+      ],
+      "title": "AgentToolCallPayload",
+      "type": "object"
+    },
+    "AgentToolResultEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/AgentToolResultPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "agent.tool_result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "AgentToolResultEvent",
+      "type": "object"
+    },
+    "AgentToolResultPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "is_error": {
+          "type": "boolean"
+        },
+        "original_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tool_use_id": {
+          "type": "string"
+        },
+        "truncated": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "tool_use_id",
+        "is_error",
+        "content",
+        "truncated",
+        "original_size"
+      ],
+      "title": "AgentToolResultPayload",
+      "type": "object"
+    },
+    "AgentUsageEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/AgentUsagePayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "agent.usage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "AgentUsageEvent",
+      "type": "object"
+    },
+    "AgentUsagePayload": {
+      "additionalProperties": false,
+      "properties": {
+        "cache_creation_input_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "cache_read_input_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "context_max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "context_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cost_usd": {
+          "type": "number"
+        },
+        "input_tokens": {
+          "type": "integer"
+        },
+        "model": {
+          "type": "string"
+        },
+        "output_tokens": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "model",
+        "input_tokens",
+        "output_tokens",
+        "cache_creation_input_tokens",
+        "cache_read_input_tokens",
+        "context_tokens",
+        "context_max",
+        "cost_usd"
+      ],
+      "title": "AgentUsagePayload",
+      "type": "object"
+    },
+    "ArtifactCreatedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/ArtifactPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "artifact.created",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "ArtifactCreatedEvent",
+      "type": "object"
+    },
+    "ArtifactKind": {
+      "enum": [
+        "requirements",
+        "design",
+        "dev_result",
+        "integration",
+        "review",
+        "test_report",
+        "release_plan"
+      ],
+      "title": "ArtifactKind",
+      "type": "string"
+    },
+    "ArtifactPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ArtifactKind"
+        },
+        "title": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "kind",
+        "version",
+        "title"
+      ],
+      "title": "ArtifactPayload",
+      "type": "object"
+    },
+    "ArtifactRevisedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/ArtifactPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "artifact.revised",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "ArtifactRevisedEvent",
+      "type": "object"
+    },
+    "BudgetUpdatedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/BudgetUpdatedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "budget.updated",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "BudgetUpdatedEvent",
+      "type": "object"
+    },
+    "BudgetUpdatedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "budget_usd": {
+          "type": "number"
+        },
+        "spent_usd": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "spent_usd",
+        "budget_usd"
+      ],
+      "title": "BudgetUpdatedPayload",
+      "type": "object"
+    },
+    "CiStatusEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/CiStatusPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "ci.status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "CiStatusEvent",
+      "type": "object"
+    },
+    "CiStatusPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "pending",
+            "success",
+            "failure",
+            "neutral"
+          ],
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "state",
+        "summary"
+      ],
+      "title": "CiStatusPayload",
+      "type": "object"
+    },
+    "GateKind": {
+      "enum": [
+        "requirements",
+        "design",
+        "release"
+      ],
+      "title": "GateKind",
+      "type": "string"
+    },
+    "GateOpenedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/GateOpenedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "gate.opened",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "GateOpenedEvent",
+      "type": "object"
+    },
+    "GateOpenedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "gate": {
+          "$ref": "#/$defs/GateKind"
+        },
+        "gate_id": {
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "gate_id",
+        "gate",
+        "artifact_id",
+        "reason"
+      ],
+      "title": "GateOpenedPayload",
+      "type": "object"
+    },
+    "GateResolvedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/GateResolvedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "gate.resolved",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "GateResolvedEvent",
+      "type": "object"
+    },
+    "GateResolvedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": [
+            "approve",
+            "revise",
+            "edit",
+            "abort"
+          ],
+          "type": "string"
+        },
+        "feedback": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "gate_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "gate_id",
+        "action",
+        "feedback"
+      ],
+      "title": "GateResolvedPayload",
+      "type": "object"
+    },
+    "GitPushedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/GitPushedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "git.pushed",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "GitPushedEvent",
+      "type": "object"
+    },
+    "GitPushedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch",
+        "commit"
+      ],
+      "title": "GitPushedPayload",
+      "type": "object"
+    },
+    "GuardrailBlockedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/GuardrailBlockedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "guardrail.blocked",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "GuardrailBlockedEvent",
+      "type": "object"
+    },
+    "GuardrailBlockedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule",
+        "tool",
+        "detail"
+      ],
+      "title": "GuardrailBlockedPayload",
+      "type": "object"
+    },
+    "HandoffEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/HandoffPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "handoff",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "HandoffEvent",
+      "type": "object"
+    },
+    "HandoffPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "from_agent": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "to_agent": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_agent",
+        "to_agent",
+        "summary",
+        "artifact_id"
+      ],
+      "title": "HandoffPayload",
+      "type": "object"
+    },
+    "LoopIterationEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/LoopIterationPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "loop.iteration",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "LoopIterationEvent",
+      "type": "object"
+    },
+    "LoopIterationPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "iteration": {
+          "type": "integer"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "loop": {
+          "enum": [
+            "review",
+            "qa",
+            "revise"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "loop",
+        "iteration",
+        "limit"
+      ],
+      "title": "LoopIterationPayload",
+      "type": "object"
+    },
+    "MergeCompletedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/MergeCompletedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "merge.completed",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "MergeCompletedEvent",
+      "type": "object"
+    },
+    "MergeCompletedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "into": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch",
+        "into",
+        "commit"
+      ],
+      "title": "MergeCompletedPayload",
+      "type": "object"
+    },
+    "MergeConflictEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/MergeConflictPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "merge.conflict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "MergeConflictEvent",
+      "type": "object"
+    },
+    "MergeConflictPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "files": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "branch",
+        "files"
+      ],
+      "title": "MergeConflictPayload",
+      "type": "object"
+    },
+    "MergeStartedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/MergeStartedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "merge.started",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "MergeStartedEvent",
+      "type": "object"
+    },
+    "MergeStartedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "into": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch",
+        "into"
+      ],
+      "title": "MergeStartedPayload",
+      "type": "object"
+    },
+    "Phase": {
+      "enum": [
+        "init",
+        "ba",
+        "architect",
+        "dev",
+        "integrate",
+        "review",
+        "qa",
+        "devops",
+        "done"
+      ],
+      "title": "Phase",
+      "type": "string"
+    },
+    "PhaseCompletedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/PhaseCompletedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "phase.completed",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "PhaseCompletedEvent",
+      "type": "object"
+    },
+    "PhaseCompletedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt": {
+          "default": 1,
+          "type": "integer"
+        },
+        "outcome": {
+          "enum": [
+            "ok",
+            "escalated",
+            "failed"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "attempt",
+        "outcome"
+      ],
+      "title": "PhaseCompletedPayload",
+      "type": "object"
+    },
+    "PhaseStartedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/PhaseStartedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "phase.started",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "PhaseStartedEvent",
+      "type": "object"
+    },
+    "PhaseStartedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt": {
+          "default": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "attempt"
+      ],
+      "title": "PhaseStartedPayload",
+      "type": "object"
+    },
+    "PrOpenedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/PrOpenedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "pr.opened",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "PrOpenedEvent",
+      "type": "object"
+    },
+    "PrOpenedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "draft": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "number",
+        "draft"
+      ],
+      "title": "PrOpenedPayload",
+      "type": "object"
+    },
+    "PrReadyEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/PrReadyPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "pr.ready",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "PrReadyEvent",
+      "type": "object"
+    },
+    "PrReadyPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "number"
+      ],
+      "title": "PrReadyPayload",
+      "type": "object"
+    },
+    "Role": {
+      "enum": [
+        "ba",
+        "architect",
+        "dev",
+        "integrator",
+        "reviewer",
+        "qa",
+        "devops"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "RunAbortedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/RunAbortedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "run.aborted",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "RunAbortedEvent",
+      "type": "object"
+    },
+    "RunAbortedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "by": {
+          "enum": [
+            "user",
+            "system"
+          ],
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "by",
+        "reason"
+      ],
+      "title": "RunAbortedPayload",
+      "type": "object"
+    },
+    "RunCompletedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/RunCompletedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "run.completed",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "RunCompletedEvent",
+      "type": "object"
+    },
+    "RunCompletedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "pr_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "pr_url"
+      ],
+      "title": "RunCompletedPayload",
+      "type": "object"
+    },
+    "RunCreatedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/RunCreatedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "run.created",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "RunCreatedEvent",
+      "type": "object"
+    },
+    "RunCreatedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "base_branch": {
+          "type": "string"
+        },
+        "budget_usd": {
+          "type": "number"
+        },
+        "max_parallel_devs": {
+          "type": "integer"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "requirement": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "requirement",
+        "repo",
+        "base_branch",
+        "budget_usd",
+        "max_parallel_devs"
+      ],
+      "title": "RunCreatedPayload",
+      "type": "object"
+    },
+    "RunEvent": {
+      "discriminator": {
+        "mapping": {
+          "agent.finished": "#/$defs/AgentFinishedEvent",
+          "agent.started": "#/$defs/AgentStartedEvent",
+          "agent.text": "#/$defs/AgentTextEvent",
+          "agent.thinking": "#/$defs/AgentThinkingEvent",
+          "agent.tool_call": "#/$defs/AgentToolCallEvent",
+          "agent.tool_result": "#/$defs/AgentToolResultEvent",
+          "agent.usage": "#/$defs/AgentUsageEvent",
+          "artifact.created": "#/$defs/ArtifactCreatedEvent",
+          "artifact.revised": "#/$defs/ArtifactRevisedEvent",
+          "budget.updated": "#/$defs/BudgetUpdatedEvent",
+          "ci.status": "#/$defs/CiStatusEvent",
+          "gate.opened": "#/$defs/GateOpenedEvent",
+          "gate.resolved": "#/$defs/GateResolvedEvent",
+          "git.pushed": "#/$defs/GitPushedEvent",
+          "guardrail.blocked": "#/$defs/GuardrailBlockedEvent",
+          "handoff": "#/$defs/HandoffEvent",
+          "loop.iteration": "#/$defs/LoopIterationEvent",
+          "merge.completed": "#/$defs/MergeCompletedEvent",
+          "merge.conflict": "#/$defs/MergeConflictEvent",
+          "merge.started": "#/$defs/MergeStartedEvent",
+          "phase.completed": "#/$defs/PhaseCompletedEvent",
+          "phase.started": "#/$defs/PhaseStartedEvent",
+          "pr.opened": "#/$defs/PrOpenedEvent",
+          "pr.ready": "#/$defs/PrReadyEvent",
+          "run.aborted": "#/$defs/RunAbortedEvent",
+          "run.completed": "#/$defs/RunCompletedEvent",
+          "run.created": "#/$defs/RunCreatedEvent",
+          "run.failed": "#/$defs/RunFailedEvent",
+          "run.interrupted": "#/$defs/RunInterruptedEvent",
+          "run.status_changed": "#/$defs/RunStatusChangedEvent"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RunCreatedEvent"
+        },
+        {
+          "$ref": "#/$defs/RunStatusChangedEvent"
+        },
+        {
+          "$ref": "#/$defs/RunCompletedEvent"
+        },
+        {
+          "$ref": "#/$defs/RunFailedEvent"
+        },
+        {
+          "$ref": "#/$defs/RunAbortedEvent"
+        },
+        {
+          "$ref": "#/$defs/RunInterruptedEvent"
+        },
+        {
+          "$ref": "#/$defs/PhaseStartedEvent"
+        },
+        {
+          "$ref": "#/$defs/PhaseCompletedEvent"
+        },
+        {
+          "$ref": "#/$defs/AgentStartedEvent"
+        },
+        {
+          "$ref": "#/$defs/AgentFinishedEvent"
+        },
+        {
+          "$ref": "#/$defs/AgentTextEvent"
+        },
+        {
+          "$ref": "#/$defs/AgentThinkingEvent"
+        },
+        {
+          "$ref": "#/$defs/AgentToolCallEvent"
+        },
+        {
+          "$ref": "#/$defs/AgentToolResultEvent"
+        },
+        {
+          "$ref": "#/$defs/AgentUsageEvent"
+        },
+        {
+          "$ref": "#/$defs/HandoffEvent"
+        },
+        {
+          "$ref": "#/$defs/ArtifactCreatedEvent"
+        },
+        {
+          "$ref": "#/$defs/ArtifactRevisedEvent"
+        },
+        {
+          "$ref": "#/$defs/GateOpenedEvent"
+        },
+        {
+          "$ref": "#/$defs/GateResolvedEvent"
+        },
+        {
+          "$ref": "#/$defs/LoopIterationEvent"
+        },
+        {
+          "$ref": "#/$defs/GuardrailBlockedEvent"
+        },
+        {
+          "$ref": "#/$defs/BudgetUpdatedEvent"
+        },
+        {
+          "$ref": "#/$defs/MergeStartedEvent"
+        },
+        {
+          "$ref": "#/$defs/MergeConflictEvent"
+        },
+        {
+          "$ref": "#/$defs/MergeCompletedEvent"
+        },
+        {
+          "$ref": "#/$defs/GitPushedEvent"
+        },
+        {
+          "$ref": "#/$defs/PrOpenedEvent"
+        },
+        {
+          "$ref": "#/$defs/PrReadyEvent"
+        },
+        {
+          "$ref": "#/$defs/CiStatusEvent"
+        }
+      ],
+      "title": "RunEvent"
+    },
+    "RunFailedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/RunFailedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "run.failed",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "RunFailedEvent",
+      "type": "object"
+    },
+    "RunFailedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason",
+        "detail"
+      ],
+      "title": "RunFailedPayload",
+      "type": "object"
+    },
+    "RunInterruptedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/RunInterruptedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "run.interrupted",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "RunInterruptedEvent",
+      "type": "object"
+    },
+    "RunInterruptedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "last_checkpoint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "last_checkpoint"
+      ],
+      "title": "RunInterruptedPayload",
+      "type": "object"
+    },
+    "RunRecord": {
+      "properties": {
+        "base_branch": {
+          "type": "string"
+        },
+        "budget_usd": {
+          "type": "number"
+        },
+        "created_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_seq": {
+          "default": 0,
+          "type": "integer"
+        },
+        "max_parallel_devs": {
+          "type": "integer"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "repo": {
+          "type": "string"
+        },
+        "requirement": {
+          "type": "string"
+        },
+        "spent_usd": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "status": {
+          "$ref": "#/$defs/RunStatus",
+          "default": "pending"
+        },
+        "tokens": {
+          "$ref": "#/$defs/TokenTotals"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "requirement",
+        "repo",
+        "base_branch",
+        "budget_usd",
+        "max_parallel_devs",
+        "status",
+        "phase",
+        "spent_usd",
+        "tokens",
+        "last_seq",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "RunRecord",
+      "type": "object"
+    },
+    "RunStatus": {
+      "enum": [
+        "pending",
+        "running",
+        "waiting_gate",
+        "completed",
+        "failed",
+        "aborted",
+        "interrupted"
+      ],
+      "title": "RunStatus",
+      "type": "string"
+    },
+    "RunStatusChangedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "$ref": "#/$defs/RunStatusChangedPayload"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "type": {
+          "const": "run.status_changed",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "ts",
+        "phase",
+        "agent_id",
+        "type",
+        "payload"
+      ],
+      "title": "RunStatusChangedEvent",
+      "type": "object"
+    },
+    "RunStatusChangedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/RunStatus"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "RunStatusChangedPayload",
+      "type": "object"
+    },
+    "TokenTotals": {
+      "properties": {
+        "cache_creation_input_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "cache_read_input_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "cache_creation_input_tokens",
+        "cache_read_input_tokens"
+      ],
+      "title": "TokenTotals",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "event": {
+      "$ref": "#/$defs/RunEvent"
+    },
+    "run": {
+      "$ref": "#/$defs/RunRecord"
+    }
+  },
+  "required": [
+    "event",
+    "run"
+  ],
+  "title": "Api",
+  "type": "object"
+}
