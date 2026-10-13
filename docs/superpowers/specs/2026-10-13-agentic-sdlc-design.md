@@ -15,7 +15,7 @@ Greenfield project. Container runtime: Python 3.12, Node 22 (web build only).
 | Purpose | Real dev tool + public portfolio |
 | Roles | BA/PO, Architect/Tech Lead, Developer(s), Integrator, Reviewer, QA, DevOps |
 | Topology | Orchestrated pipeline (central state machine) |
-| Human gates | After BA, after Architect, before PR is marked ready. Actions: **Approve / Request changes (feedback → phase re-runs) / Edit artifact / Abort** |
+| Human gates | After BA, after Architect, before PR is marked ready. Actions: **Approve / Request changes (feedback → phase re-runs) / Edit artifact / Abort**. Each `gate.opened` lists its allowed actions. Escalations (loop limits, agent failures) offer Approve (proceed or retry), Request changes and Abort. Release-gate feedback goes back to Dev, and the same PR is updated. |
 | Runtime | Claude Agent SDK for **Python** (`claude-agent-sdk`, bundles the CLI, no Node in the image) |
 | Models | Tiered, set in YAML: Opus 5.5 (`claude-opus-5-5`) for Architect and Reviewer; Sonnet 5.5 (`claude-sonnet-5-5`) for BA, Dev, Integrator, and QA; Haiku 5.5 (`claude-haiku-5-5`) for DevOps |
 | Input → output | Free-text requirement in GUI → GitHub PR |
@@ -52,12 +52,14 @@ With Bash enabled, an agent's shell inherits its env, so a prompt injection coul
   - GitOps clones with `--separate-git-dir` into an API-owned directory outside the working tree (group `sdlc`, read-only to the group: `2750`/`0640`). Agents can still run `git diff`/`log`/`show`, but they cannot write the git dir, so agents never commit.
   - Every API-side git command sets `GIT_DIR` and `GIT_WORK_TREE` explicitly, ignoring any `.git` file the agent might replace. It also sets `GIT_CONFIG_NOSYSTEM=1` and `GIT_CONFIG_GLOBAL=/dev/null`, and passes `-c core.hooksPath=/dev/null -c core.fsmonitor=false`.
   - The API never executes anything from the working tree.
+  - `/work` is sticky, and `/work/runs`, `/work/git` and each run directory are API-owned and group read-only (2750). Agents can write inside a run's `repo/` but can't rename or replace the tree or a git dir. The API refuses a symlinked tree, and it reads the README and writes `docs/sdlc/` without following symlinks (revised 2026-10-13, Plan 3).
+  - Pushes are refused when the change touches anything under `.github/` (matched case-insensitively on raw paths): workflows and composite actions run in CI with the repository's secrets.
 - **Local development without the agent uid**: Bash-capable roles (Dev, Reviewer, QA, DevOps) refuse to start unless `AGENT_USER` is set, or `ALLOW_UNISOLATED_BASH=true` explicitly accepts the risk. The runner also blanks known secret variables in the CLI's environment.
 - **Guardrails: NeMo Guardrails** (`check_async`, rails only, no main-LLM call) on four surfaces:
   - **Bash commands:** a `PreToolUse` hook runs custom YARA rules through NeMo injection detection. It fails closed.
   - **Tool results:** a `PostToolUse` scan for indirect prompt injection. It fails open with a warning event.
   - **User input:** the requirement and gate feedback get a Claude Haiku `self check input` plus context-bloat limits, metered through the proxy as a "guardrails" agent.
-  - **Publish:** everything sent to GitHub gets Presidio masking of secrets/PII and XSS/template injection removal.
+  - **Publish:** everything sent to GitHub passes NeMo `injection detection` in `omit` mode with our YARA rules for leaked keys and tokens (Anthropic, GitHub, AWS) and active content (`<script>`, `javascript:`). A removal emits `guardrail.blocked(redacted-before-publish)`; if the rails fail, nothing is published. (Presidio was dropped: NeMo's integration requires the ~560 MB `en_core_web_lg` model. NeMo's built-in `xss`/`template` rules would delete legitimate `{{ }}` and link text in omit mode.)
 
   File tools are confined to the workspace by a Python `realpath`/`commonpath` check, which also denies `.github/workflows/**`. Each denial emits a `guardrail.blocked` event. These are backstops; the boundary is the container plus the separate uid. Use `permission_mode="dontAsk"` with scoped `allowed_tools` (`bypassPermissions` refuses to run as root).
 - Hosted mode: Cloud Run `max-instances=1`, 1 live run at a time (others get "busy" and can still watch replays), per-IP rate limit, shallow clone, and a repo size cap.
@@ -160,6 +162,7 @@ agentic-sdlc/
   - Image built by GitHub Actions and pushed to Artifact Registry. Deploy uses Workload Identity Federation (no JSON keys).
   - Settings: 2 vCPU / 4 GiB, timeout 3600s, max-instances 1, request-based billing, `HOSTED_MODE=true`. The Mongo URI is in Secret Manager.
 - **Atlas M0**: same region as Cloud Run; IP allowlist 0.0.0.0/0 with a strong user (M0 has no private networking). Document this trade-off.
+  - Note for M7: the local Mongo has no auth and is reachable from the agent uid inside the container network. Hosted mode must use an authenticated connection string kept out of the agent's environment (the agent-cli allowlist passes no `MONGO_*`).
 - **Vercel**: GitHub integration, root `web/`, `VITE_API_URL` env, per-PR preview deploys. CORS allowlist on the API.
 - README: architecture diagram, demo GIF, a "try a replay" link, a BYO-key guide (fine-grained PAT scoped to one repo), and a cost note. GCP needs a billing account, so set a $1 budget alert.
 
@@ -172,6 +175,7 @@ agentic-sdlc/
   - CredentialProxy tests with `respx` mocking Anthropic streaming responses (usage parsing, budget cutoff, key never echoed).
   - Mongo via testcontainers.
 - **Frontend**: Vitest for the reducer (fixture JSONL → expected view state) and components; Playwright e2e replays a fixture run (graph animates, timeline fills, metrics totals match fixture sums).
+- A keyless scripted pipeline (`POST /api/dev/scripted-runs`) runs the real orchestrator with scripted agents, a local bare remote and an in-memory GitHub.
 - **Live smoke** (opt-in, `make smoke`, needs keys): a small requirement against the `agentic-sdlc-sandbox` repo (its app comes from a separate use case the owner will define) reaches a draft PR.
 - **CI**: ruff, mypy, eslint, tsc, both test suites, generated-types freshness check, docker build.
 

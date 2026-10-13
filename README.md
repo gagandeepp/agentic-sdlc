@@ -46,3 +46,19 @@ curl -s -X POST localhost:5173/api/dev/agent-probe -H 'content-type: application
 ```
 
 Open the returned run at http://localhost:5173/runs/<id>.
+
+## Orchestrator (M4)
+
+A run takes a requirement through BA → **requirements gate** → Architect → **design gate** → Dev ⇄ Review (≤3 fix rounds) ⇄ QA (≤2) → push → DevOps → **draft PR** → CI → **release gate** → PR ready for review.
+
+- **Gates:** Approve, Request changes (the phase re-runs with your feedback) or Edit (your markdown goes to every later agent). Loops that hit their limit, and agent failures, open an escalation gate.
+- **Durable:** each step saves a checkpoint. If the API restarts, the run shows **interrupted**; **Resume** continues from the last checkpoint. A pending gate re-opens without re-running its agent.
+- **Limits:** a hard budget enforced by the credential proxy, and a 50-minute limit on active time (gate and CI waits don't count).
+- **Guardrails (NeMo):**
+  - the requirement and gate feedback pass an input rail, a Claude Haiku self-check billed to the run, which shows as the `guardrails` agent;
+  - everything published to GitHub has keys, tokens and active content removed;
+  - agents can't push, can't change CI workflows, and can't touch the git dir: it lives outside their working tree and only the API can write it.
+
+Try it without keys (scripted agents, a local git remote and an in-memory GitHub): `docker compose up --build -d`, open http://localhost:5173, type a requirement and choose **Scripted demo (no keys)**.
+
+Live runs need `AGENT_ANTHROPIC_KEY` and `AGENT_GITHUB_TOKEN` in `.env`. The token should be a fine-grained PAT for the target repo only, with Contents RW, Pull requests RW, Checks R and Commit statuses R. Choose **Start run**; the default target is [agentic-sdlc-sandbox](https://github.com/gagandeepp/agentic-sdlc-sandbox). `make smoke` runs one live run end to end (about $1–2).
