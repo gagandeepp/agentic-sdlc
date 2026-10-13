@@ -11,6 +11,7 @@ from pymongo.asynchronous.database import AsyncDatabase
 
 from app.events.models import (
     EVENT_ADAPTER,
+    TERMINAL_EVENT_TYPES,
     AgentUsageEvent,
     BudgetUpdatedEvent,
     GateOpenedEvent,
@@ -120,8 +121,21 @@ class MongoStore:
             raise RunNotFound(run_id)
         return int(doc["last_seq"])
 
+    async def release_seq(self, run_id: str, seq: int) -> None:
+        """Give back a seq whose event was never written (only if it is still the latest)."""
+        await self._runs.update_one({"_id": run_id, "last_seq": seq}, {"$inc": {"last_seq": -1}})
+
     async def insert_event(self, event: RunEvent) -> None:
         await self._events.insert_one(EVENT_ADAPTER.dump_python(event, mode="json"))
+
+    async def has_event(self, run_id: str, seq: int) -> bool:
+        return await self._events.find_one({"run_id": run_id, "seq": seq}, {"_id": 1}) is not None
+
+    async def last_event_is_terminal(self, run_id: str) -> bool:
+        doc = await self._events.find_one(
+            {"run_id": run_id}, {"type": 1}, sort=[("seq", DESCENDING)]
+        )
+        return doc is not None and doc["type"] in TERMINAL_EVENT_TYPES
 
     async def list_events_after(self, run_id: str, after_seq: int = 0) -> AsyncIterator[RunEvent]:
         cursor = self._events.find(

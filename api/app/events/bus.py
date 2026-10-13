@@ -8,9 +8,12 @@ max-instances=1), so in-memory fan-out is sufficient.
 """
 
 import asyncio
+import logging
 from collections import defaultdict
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
+
+from pymongo.errors import PyMongoError
 
 from app.events.models import (
     EVENT_ADAPTER,
@@ -19,13 +22,10 @@ from app.events.models import (
     ContractModel,
     Phase,
     RunEvent,
-    RunStatus,
 )
 from app.store.mongo import MongoStore
 
-_FINISHED = frozenset(
-    {RunStatus.COMPLETED, RunStatus.FAILED, RunStatus.ABORTED, RunStatus.INTERRUPTED}
-)
+log = logging.getLogger(__name__)
 
 
 class SubscriberOverflow(Exception):
@@ -74,18 +74,29 @@ class EventBus:
                     "payload": payload.model_dump(),
                 }
             )
-            await self._store.insert_event(event)
-            await self._store.apply_projection(event)
+            try:
+                await self._store.insert_event(event)
+            except Exception:
+                # The write can land even when the call fails (lost reply). Give the seq back
+                # only if it did not, so the log gets neither a hole nor a duplicate.
+                if not await self._store.has_event(run_id, seq):
+                    await self._store.release_seq(run_id, seq)
+                    raise
             self._publish(event)
+            try:
+                await self._store.apply_projection(event)
+            except PyMongoError:
+                # The projection is derived from the log; a missed update must not hide a
+                # durable event from live viewers.
+                log.exception("run projection update failed for %s seq %d", run_id, seq)
         return event
 
     async def subscribe(self, run_id: str, after_seq: int = 0) -> AsyncIterator[RunEvent]:
         subscriber = _Subscriber(self._queue_size)
         async with self._locks[run_id]:
+            # Read under the lock so the answer matches the log at registration time.
+            finished = await self._store.last_event_is_terminal(run_id)
             self._subscribers[run_id].add(subscriber)
-            # Read under the lock so the status agrees with what is stored at registration.
-            run = await self._store.get_run(run_id)
-            finished = run is None or run.status in _FINISHED
         last = after_seq
         try:
             async for event in self._store.list_events_after(run_id, after_seq):
