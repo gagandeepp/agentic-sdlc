@@ -6,6 +6,7 @@ role's `tools` list already limits what exists, and this layer only adds denials
 
 import json
 import os
+import re
 from collections.abc import Awaitable, Callable, Mapping
 from pathlib import Path
 from typing import Any, cast
@@ -29,6 +30,9 @@ _PATH_FIELDS = {
 }
 _WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 _DETAIL_LIMIT = 300
+_GLOB_META = re.compile(r"[*?\[{]")
+# A ".." segment anywhere in a glob, including inside {a,b} alternatives.
+_PARENT_SEGMENT = re.compile(r"(?:^|[/{,])\.\.(?:$|[/},])")
 
 UNTRUSTED_WARNING = (
     "agentic-sdlc guardrails: the previous tool result contains text that looks like an "
@@ -44,9 +48,17 @@ def evaluate_path(tool_name: str, tool_input: Mapping[str, Any], workspace: Path
     field = _PATH_FIELDS.get(tool_name)
     if field is None:
         return ALLOW
-    candidates = [str(tool_input[field])] if tool_input.get(field) else []
-    if tool_name == "Glob" and str(tool_input.get("pattern", "")).startswith(("/", "~")):
-        candidates.append(str(tool_input["pattern"]).split("*", 1)[0] or "/")
+    base = str(tool_input.get(field) or "")
+    candidates = [base] if base else []
+    if tool_name == "Glob":
+        pattern = str(tool_input.get("pattern", ""))
+        if _PARENT_SEGMENT.search(pattern):
+            return Verdict(allowed=False, rules=("outside-workspace",))
+        prefix = _GLOB_META.split(pattern, maxsplit=1)[0]
+        if prefix:
+            # An absolute prefix replaces the base directory, as it does for the glob itself.
+            expanded = os.path.expanduser(prefix)
+            candidates.append(os.path.join(os.path.expanduser(base), expanded))
     root = Path(os.path.realpath(workspace))
     for raw in candidates:
         target = Path(os.path.expanduser(raw))

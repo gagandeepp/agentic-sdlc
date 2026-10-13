@@ -35,6 +35,11 @@ async def guardrails() -> GuardrailsService:
         ("Read", {"file_path": "escape"}, "outside-workspace"),  # symlink out of the workspace
         ("Grep", {"pattern": "x", "path": "/"}, "outside-workspace"),
         ("Glob", {"pattern": "/etc/*"}, "outside-workspace"),
+        ("Glob", {"pattern": "../*"}, "outside-workspace"),
+        ("Glob", {"pattern": "../outside.txt"}, "outside-workspace"),
+        ("Glob", {"pattern": "**/../../*"}, "outside-workspace"),
+        ("Glob", {"pattern": "../../*", "path": "src"}, "outside-workspace"),
+        ("Glob", {"pattern": "{../outside.txt,x}"}, "outside-workspace"),
         ("Write", {"file_path": ".github/workflows/ci.yml", "content": "x"}, "workflow-file"),
         (
             "Edit",
@@ -58,6 +63,8 @@ def test_file_tools_are_confined_to_the_workspace(
         ("Read", {"file_path": ".github/workflows/ci.yml"}),  # reading CI config is fine
         ("Write", {"file_path": "src/new.py", "content": "x"}),
         ("Glob", {"pattern": "**/*.py"}),
+        ("Glob", {"pattern": "*.py", "path": "src"}),
+        ("Glob", {"pattern": "src/[a-z]*.py"}),
         ("Grep", {"pattern": "def "}),
         ("StructuredOutput", {"summary": "x"}),  # internal and unknown tools are allowed
     ],
