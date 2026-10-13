@@ -143,7 +143,7 @@ agentic-sdlc/
 ```
 
 ## Deployment
-- **Local**: `docker compose up` brings up `api`, `web` (nginx), and `mongo:7`. Keys come from `.env`.
+- **Local**: `docker compose up` brings up `api`, `web` (nginx), and `mongo:8.0` (matches Atlas). Keys come from `.env`.
 - **Cloud Run**:
   - Image built by GitHub Actions and pushed to Artifact Registry. Deploy uses Workload Identity Federation (no JSON keys).
   - Settings: 2 vCPU / 4 GiB, timeout 3600s, max-instances 1, request-based billing, `HOSTED_MODE=true`. The Mongo URI is in Secret Manager.
@@ -160,7 +160,7 @@ agentic-sdlc/
   - CredentialProxy tests with `respx` mocking Anthropic streaming responses (usage parsing, budget cutoff, key never echoed).
   - Mongo via testcontainers.
 - **Frontend**: Vitest for the reducer (fixture JSONL → expected view state) and components; Playwright e2e replays a fixture run (graph animates, timeline fills, metrics totals match fixture sums).
-- **Live smoke** (opt-in, `make smoke`, needs keys): a small requirement against a sandbox repo `agentic-sdlc-sandbox` (tiny Python + TS app) reaches a draft PR.
+- **Live smoke** (opt-in, `make smoke`, needs keys): a small requirement against the `agentic-sdlc-sandbox` repo (its app comes from a separate use case the owner will define) reaches a draft PR.
 - **CI**: ruff, mypy, eslint, tsc, both test suites, generated-types freshness check, docker build.
 
 ## Milestones (each ends green and demoable)
