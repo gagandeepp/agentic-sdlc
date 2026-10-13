@@ -1,7 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { expect, test } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import App from './App'
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('[]', { headers: { 'Content-Type': 'application/json' } })))
+})
+afterEach(() => vi.unstubAllGlobals())
 
 test('renders the shell with the runs page at /', () => {
   render(

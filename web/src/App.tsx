@@ -1,4 +1,5 @@
 import { Link, Route, Routes } from 'react-router'
+import { RunPage } from './features/run/RunPage'
 import { RunsPage } from './features/runs/RunsPage'
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
       </nav>
       <Routes>
         <Route path="/" element={<RunsPage />} />
+        <Route path="/runs/:runId" element={<RunPage />} />
       </Routes>
     </div>
   )
