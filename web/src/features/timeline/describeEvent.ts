@@ -83,8 +83,10 @@ export function describeEvent(e: RunEvent): EventSummary {
         detail: e.payload.feedback,
         tone: e.payload.action === 'abort' ? 'danger' : 'success',
       }
-    case 'loop.iteration':
-      return { title: `↺ ${e.payload.loop} ${e.payload.iteration}/${e.payload.limit}`, detail: null, tone: 'warning' }
+    case 'loop.iteration': {
+      const { loop, iteration, limit } = e.payload
+      return { title: `↺ ${loop} ${limit === null ? `#${iteration}` : `${iteration}/${limit}`}`, detail: null, tone: 'warning' }
+    }
     case 'guardrail.blocked':
       return { title: `⛔ Blocked: ${e.payload.rule}`, detail: `${e.payload.tool}: ${e.payload.detail}`, tone: 'danger' }
     case 'budget.updated':

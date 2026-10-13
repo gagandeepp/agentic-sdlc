@@ -2,10 +2,11 @@ import asyncio
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 from pymongo import AsyncMongoClient
 from pymongo.errors import DuplicateKeyError
 
-from app.events.models import RunStatus
+from app.events.models import Checkpoint, RunStatus
 from app.store.mongo import MongoStore, NewRun, RunNotFound
 from tests.factories import make_event
 
@@ -97,7 +98,13 @@ async def test_projection_tracks_status_phase_spend_and_tokens(store: MongoStore
     assert projected.tokens.input_tokens == 200
     assert projected.tokens.cache_read_input_tokens == 80
 
-    gate = {"gate_id": "g1", "gate": "requirements", "artifact_id": None, "reason": None}
+    gate = {
+        "gate_id": "g1",
+        "gate": "requirements",
+        "actions": ["approve"],
+        "artifact_id": None,
+        "reason": None,
+    }
     await store.apply_projection(make_event("gate.opened", gate, run_id=run.id, seq=5))
     assert await _status(store, run.id) == RunStatus.WAITING_GATE
     resolved = {"gate_id": "g1", "action": "approve", "feedback": None}
@@ -112,3 +119,42 @@ async def test_projection_tracks_status_phase_spend_and_tokens(store: MongoStore
         make_event("run.completed", {"pr_url": None}, run_id=run.id, seq=8)
     )
     assert await _status(store, run.id) == RunStatus.COMPLETED
+
+
+async def test_set_checkpoint_is_durable_and_raises_for_unknown_runs(store: MongoStore) -> None:
+    run = await store.create_run(NEW)
+    await store.set_checkpoint(run.id, Checkpoint.CLONED, {"base_sha": "abc"})
+    fetched = await store.get_run(run.id)
+    assert fetched is not None
+    assert fetched.checkpoint is Checkpoint.CLONED
+    assert fetched.checkpoint_data == {"base_sha": "abc"}
+    with pytest.raises(RunNotFound):
+        await store.set_checkpoint("run_missing", Checkpoint.CLONED, {})
+
+
+async def test_projection_records_the_pr_url_and_interrupted_is_not_terminal(
+    store: MongoStore,
+) -> None:
+    run = await store.create_run(NEW)
+    opened = make_event(
+        "pr.opened", {"url": "https://x/pull/1", "number": 1, "draft": True}, run_id=run.id
+    )
+    await store.apply_projection(opened)
+    await store.insert_event(make_event("run.interrupted", {}, run_id=run.id))
+    fetched = await store.get_run(run.id)
+    assert fetched is not None and fetched.pr_url == "https://x/pull/1"
+    assert not await store.last_event_is_terminal(run.id)
+
+
+async def test_list_runs_in_filters_by_status_and_mode_defaults_to_live(store: MongoStore) -> None:
+    running = await store.create_run(NEW)
+    done = await store.create_run(NEW.model_copy(update={"mode": "scripted"}))
+    await store.apply_projection(
+        make_event("run.status_changed", {"status": "running"}, run_id=running.id)
+    )
+    await store.apply_projection(make_event("run.completed", {}, run_id=done.id))
+    found = await store.list_runs_in([RunStatus.RUNNING, RunStatus.PENDING])
+    assert [r.id for r in found] == [running.id]
+    assert running.mode == "live" and done.mode == "scripted"
+    with pytest.raises(ValidationError):
+        NewRun(requirement="x" * 4001, repo="o/r")

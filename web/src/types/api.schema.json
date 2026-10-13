@@ -815,6 +815,21 @@
       "title": "BudgetUpdatedPayload",
       "type": "object"
     },
+    "Checkpoint": {
+      "description": "Durable points a run resumes from, in run order (stored on the run, not derived).",
+      "enum": [
+        "cloned",
+        "requirements_drafted",
+        "requirements_approved",
+        "design_drafted",
+        "design_approved",
+        "pushed",
+        "pr_opened",
+        "done"
+      ],
+      "title": "Checkpoint",
+      "type": "string"
+    },
     "CiStatusEvent": {
       "additionalProperties": false,
       "properties": {
@@ -898,7 +913,8 @@
       "enum": [
         "requirements",
         "design",
-        "release"
+        "release",
+        "escalation"
       ],
       "title": "GateKind",
       "type": "string"
@@ -962,6 +978,19 @@
     "GateOpenedPayload": {
       "additionalProperties": false,
       "properties": {
+        "actions": {
+          "items": {
+            "enum": [
+              "approve",
+              "revise",
+              "edit",
+              "abort"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
         "artifact_id": {
           "anyOf": [
             {
@@ -994,6 +1023,7 @@
       "required": [
         "gate_id",
         "gate",
+        "actions",
         "artifact_id",
         "reason"
       ],
@@ -1393,7 +1423,15 @@
           "type": "integer"
         },
         "limit": {
-          "type": "integer"
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "loop": {
           "enum": [
@@ -1960,7 +1998,8 @@
         "integrator",
         "reviewer",
         "qa",
-        "devops"
+        "devops",
+        "guardrails"
       ],
       "title": "Role",
       "type": "string"
@@ -2485,7 +2524,7 @@
         "last_checkpoint": {
           "anyOf": [
             {
-              "$ref": "#/$defs/Phase"
+              "$ref": "#/$defs/Checkpoint"
             },
             {
               "type": "null"
@@ -2508,6 +2547,21 @@
         "budget_usd": {
           "type": "number"
         },
+        "checkpoint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Checkpoint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "checkpoint_data": {
+          "additionalProperties": true,
+          "type": "object"
+        },
         "created_at": {
           "format": "date-time",
           "type": "string"
@@ -2522,10 +2576,30 @@
         "max_parallel_devs": {
           "type": "integer"
         },
+        "mode": {
+          "default": "live",
+          "enum": [
+            "live",
+            "scripted",
+            "demo"
+          ],
+          "type": "string"
+        },
         "phase": {
           "anyOf": [
             {
               "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pr_url": {
+          "anyOf": [
+            {
+              "type": "string"
             },
             {
               "type": "null"
@@ -2562,8 +2636,12 @@
         "base_branch",
         "budget_usd",
         "max_parallel_devs",
+        "mode",
         "status",
         "phase",
+        "checkpoint",
+        "checkpoint_data",
+        "pr_url",
         "spent_usd",
         "tokens",
         "last_seq",

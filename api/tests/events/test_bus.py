@@ -4,7 +4,16 @@ import pytest
 from pymongo.errors import AutoReconnect
 
 from app.events.bus import EventBus, SubscriberOverflow
-from app.events.models import AgentTextPayload, HandoffPayload, RunCompletedPayload, RunEvent
+from app.events.models import (
+    AgentTextPayload,
+    Checkpoint,
+    HandoffPayload,
+    RunCompletedPayload,
+    RunEvent,
+    RunInterruptedPayload,
+    RunStatus,
+    RunStatusChangedPayload,
+)
 from app.store.mongo import MongoStore, NewRun, RunRecord
 
 NEW = NewRun(requirement="r", repo="o/r")
@@ -179,3 +188,25 @@ async def test_events_after_a_final_event_are_dropped(store: MongoStore) -> None
     await _complete(bus, run)
     assert await bus.emit(run.id, "agent.text", AgentTextPayload(text="late usage")) is None
     assert [e.type async for e in store.list_events_after(run.id)] == ["run.completed"]
+
+
+async def test_interrupted_does_not_end_a_subscription(store: MongoStore) -> None:
+    bus = EventBus(store)
+    run = await store.create_run(NEW)
+    interrupted = RunInterruptedPayload(last_checkpoint=Checkpoint.CLONED)
+    await bus.emit(run.id, "run.interrupted", interrupted)
+    received: list[str] = []
+
+    async def consume() -> None:
+        async for event in bus.subscribe(run.id):
+            received.append(event.type)
+
+    task = asyncio.create_task(consume())
+    await asyncio.sleep(0.1)
+    assert received == ["run.interrupted"] and not task.done()
+    # A resumed run keeps writing to the same log and the same viewers.
+    running = RunStatusChangedPayload(status=RunStatus.RUNNING)
+    await bus.emit(run.id, "run.status_changed", running)
+    await _complete(bus, run)
+    await asyncio.wait_for(task, 2)
+    assert received == ["run.interrupted", "run.status_changed", "run.completed"]

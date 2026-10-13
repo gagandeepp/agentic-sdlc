@@ -10,7 +10,7 @@
 {"run_id":"run_demo0001","seq":10,"ts":"2026-10-13T09:00:02.300000Z","phase":"ba","agent_id":"ba","type":"agent.finished","payload":{"ok":true,"num_turns":3,"duration_ms":1900}}
 {"run_id":"run_demo0001","seq":11,"ts":"2026-10-13T09:00:02.400000Z","phase":"ba","agent_id":"ba","type":"artifact.created","payload":{"artifact_id":"art_req","kind":"requirements","version":1,"title":"Requirements"}}
 {"run_id":"run_demo0001","seq":12,"ts":"2026-10-13T09:00:02.500000Z","phase":"ba","agent_id":null,"type":"phase.completed","payload":{"attempt":1,"outcome":"ok"}}
-{"run_id":"run_demo0001","seq":13,"ts":"2026-10-13T09:00:02.700000Z","phase":"ba","agent_id":null,"type":"gate.opened","payload":{"gate_id":"gate_req","gate":"requirements","artifact_id":"art_req","reason":null}}
+{"run_id":"run_demo0001","seq":13,"ts":"2026-10-13T09:00:02.700000Z","phase":"ba","agent_id":null,"type":"gate.opened","payload":{"gate_id":"gate_req","gate":"requirements","actions":["approve","revise","edit","abort"],"artifact_id":"art_req","reason":null}}
 {"run_id":"run_demo0001","seq":14,"ts":"2026-10-13T09:00:04.200000Z","phase":"ba","agent_id":null,"type":"gate.resolved","payload":{"gate_id":"gate_req","action":"approve","feedback":null}}
 {"run_id":"run_demo0001","seq":15,"ts":"2026-10-13T09:00:04.300000Z","phase":"ba","agent_id":"ba","type":"handoff","payload":{"from_agent":"ba","to_agent":"architect","summary":"2 stories approved","artifact_id":"art_req"}}
 {"run_id":"run_demo0001","seq":16,"ts":"2026-10-13T09:00:04.500000Z","phase":"architect","agent_id":null,"type":"phase.started","payload":{"attempt":1}}
@@ -24,7 +24,7 @@
 {"run_id":"run_demo0001","seq":24,"ts":"2026-10-13T09:00:07Z","phase":"architect","agent_id":"architect","type":"agent.finished","payload":{"ok":true,"num_turns":4,"duration_ms":2600}}
 {"run_id":"run_demo0001","seq":25,"ts":"2026-10-13T09:00:07.100000Z","phase":"architect","agent_id":"architect","type":"artifact.created","payload":{"artifact_id":"art_design","kind":"design","version":1,"title":"Design"}}
 {"run_id":"run_demo0001","seq":26,"ts":"2026-10-13T09:00:07.200000Z","phase":"architect","agent_id":null,"type":"phase.completed","payload":{"attempt":1,"outcome":"ok"}}
-{"run_id":"run_demo0001","seq":27,"ts":"2026-10-13T09:00:07.400000Z","phase":"architect","agent_id":null,"type":"gate.opened","payload":{"gate_id":"gate_design","gate":"design","artifact_id":"art_design","reason":null}}
+{"run_id":"run_demo0001","seq":27,"ts":"2026-10-13T09:00:07.400000Z","phase":"architect","agent_id":null,"type":"gate.opened","payload":{"gate_id":"gate_design","gate":"design","actions":["approve","revise","edit","abort"],"artifact_id":"art_design","reason":null}}
 {"run_id":"run_demo0001","seq":28,"ts":"2026-10-13T09:00:08.900000Z","phase":"architect","agent_id":null,"type":"gate.resolved","payload":{"gate_id":"gate_design","action":"approve","feedback":null}}
 {"run_id":"run_demo0001","seq":29,"ts":"2026-10-13T09:00:09Z","phase":"architect","agent_id":"architect","type":"handoff","payload":{"from_agent":"architect","to_agent":"dev-1","summary":"T1: CSV endpoint in src/orders/api.py","artifact_id":"art_design"}}
 {"run_id":"run_demo0001","seq":30,"ts":"2026-10-13T09:00:09.100000Z","phase":"architect","agent_id":"architect","type":"handoff","payload":{"from_agent":"architect","to_agent":"dev-2","summary":"T2: download button in src/orders/page.tsx","artifact_id":"art_design"}}
@@ -99,7 +99,7 @@
 {"run_id":"run_demo0001","seq":99,"ts":"2026-10-13T09:00:23.200000Z","phase":"devops","agent_id":null,"type":"pr.opened","payload":{"url":"https://github.com/demo/orders-app/pull/42","number":42,"draft":true}}
 {"run_id":"run_demo0001","seq":100,"ts":"2026-10-13T09:00:24Z","phase":"devops","agent_id":null,"type":"ci.status","payload":{"state":"success","summary":"3/3 checks passed"}}
 {"run_id":"run_demo0001","seq":101,"ts":"2026-10-13T09:00:24.100000Z","phase":"devops","agent_id":null,"type":"phase.completed","payload":{"attempt":1,"outcome":"ok"}}
-{"run_id":"run_demo0001","seq":102,"ts":"2026-10-13T09:00:24.300000Z","phase":"devops","agent_id":null,"type":"gate.opened","payload":{"gate_id":"gate_release","gate":"release","artifact_id":"art_release","reason":null}}
+{"run_id":"run_demo0001","seq":102,"ts":"2026-10-13T09:00:24.300000Z","phase":"devops","agent_id":null,"type":"gate.opened","payload":{"gate_id":"gate_release","gate":"release","actions":["approve","revise","abort"],"artifact_id":"art_release","reason":null}}
 {"run_id":"run_demo0001","seq":103,"ts":"2026-10-13T09:00:25.800000Z","phase":"devops","agent_id":null,"type":"gate.resolved","payload":{"gate_id":"gate_release","action":"approve","feedback":null}}
 {"run_id":"run_demo0001","seq":104,"ts":"2026-10-13T09:00:26Z","phase":"devops","agent_id":null,"type":"pr.ready","payload":{"url":"https://github.com/demo/orders-app/pull/42","number":42}}
 {"run_id":"run_demo0001","seq":105,"ts":"2026-10-13T09:00:26.100000Z","phase":"done","agent_id":null,"type":"run.completed","payload":{"pr_url":"https://github.com/demo/orders-app/pull/42"}}

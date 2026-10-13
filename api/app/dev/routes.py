@@ -60,6 +60,7 @@ async def start_fake_run(
             repo=FAKE_REPO,
             budget_usd=FAKE_BUDGET_USD,
             max_parallel_devs=2,
+            mode="demo",
         )
     )
     _track(request, asyncio.create_task(play_fake_run(bus, run.id, speed=speed)))

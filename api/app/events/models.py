@@ -62,6 +62,7 @@ class Role(StrEnum):
     REVIEWER = "reviewer"
     QA = "qa"
     DEVOPS = "devops"
+    GUARDRAILS = "guardrails"
 
 
 class RunStatus(StrEnum):
@@ -78,6 +79,23 @@ class GateKind(StrEnum):
     REQUIREMENTS = "requirements"
     DESIGN = "design"
     RELEASE = "release"
+    ESCALATION = "escalation"
+
+
+class Checkpoint(StrEnum):
+    """Durable points a run resumes from, in run order (stored on the run, not derived)."""
+
+    CLONED = "cloned"
+    REQUIREMENTS_DRAFTED = "requirements_drafted"
+    REQUIREMENTS_APPROVED = "requirements_approved"
+    DESIGN_DRAFTED = "design_drafted"
+    DESIGN_APPROVED = "design_approved"
+    PUSHED = "pushed"
+    PR_OPENED = "pr_opened"
+    DONE = "done"
+
+
+GateAction = Literal["approve", "revise", "edit", "abort"]
 
 
 class ArtifactKind(StrEnum):
@@ -128,7 +146,7 @@ class RunAbortedPayload(ContractModel):
 
 
 class RunInterruptedPayload(ContractModel):
-    last_checkpoint: Phase | None = None
+    last_checkpoint: Checkpoint | None = None
 
 
 class PhaseStartedPayload(ContractModel):
@@ -235,20 +253,21 @@ class ArtifactPayload(ContractModel):
 class GateOpenedPayload(ContractModel):
     gate_id: str
     gate: GateKind
+    actions: list[GateAction] = Field(min_length=1)
     artifact_id: str | None = None
     reason: str | None = None
 
 
 class GateResolvedPayload(ContractModel):
     gate_id: str
-    action: Literal["approve", "revise", "edit", "abort"]
+    action: GateAction
     feedback: str | None = None
 
 
 class LoopIterationPayload(ContractModel):
     loop: Literal["review", "qa", "revise"]
     iteration: int
-    limit: int
+    limit: int | None = None  # None: a person may ask for changes any number of times
 
 
 class GuardrailBlockedPayload(ContractModel):
@@ -496,9 +515,8 @@ RunEvent = Annotated[
 
 EVENT_ADAPTER: TypeAdapter[RunEvent] = TypeAdapter(RunEvent)
 EVENT_CLASSES: tuple[type[EventBase], ...] = get_args(get_args(RunEvent)[0])
-TERMINAL_EVENT_TYPES = frozenset({"run.completed", "run.failed", "run.aborted", "run.interrupted"})
-# Events after which nothing more may be recorded for a run (unlike run.interrupted).
-FINAL_EVENT_TYPES = frozenset({"run.completed", "run.failed", "run.aborted"})
+# Only these end a run; run.interrupted is resumable, so streams stay open across it.
+TERMINAL_EVENT_TYPES = frozenset({"run.completed", "run.failed", "run.aborted"})
 
 
 def _payload_index() -> dict[str, type[ContractModel]]:

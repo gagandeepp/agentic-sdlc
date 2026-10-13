@@ -33,10 +33,22 @@ export type RunEvent =
   | CiStatusEvent;
 export type Phase = "init" | "ba" | "architect" | "dev" | "integrate" | "review" | "qa" | "devops" | "done";
 export type RunStatus = "pending" | "running" | "waiting_gate" | "completed" | "failed" | "aborted" | "interrupted";
-export type Role = "ba" | "architect" | "dev" | "integrator" | "reviewer" | "qa" | "devops";
+/**
+ * Durable points a run resumes from, in run order (stored on the run, not derived).
+ */
+export type Checkpoint =
+  | "cloned"
+  | "requirements_drafted"
+  | "requirements_approved"
+  | "design_drafted"
+  | "design_approved"
+  | "pushed"
+  | "pr_opened"
+  | "done";
+export type Role = "ba" | "architect" | "dev" | "integrator" | "reviewer" | "qa" | "devops" | "guardrails";
 export type ArtifactKind =
   "requirements" | "design" | "dev_result" | "integration" | "review" | "test_report" | "release_plan";
-export type GateKind = "requirements" | "design" | "release";
+export type GateKind = "requirements" | "design" | "release" | "escalation";
 export type RunStatus1 = "pending" | "running" | "waiting_gate" | "completed" | "failed" | "aborted" | "interrupted";
 
 export interface Api {
@@ -119,7 +131,7 @@ export interface RunInterruptedEvent {
   type: "run.interrupted";
 }
 export interface RunInterruptedPayload {
-  last_checkpoint: Phase | null;
+  last_checkpoint: Checkpoint | null;
 }
 export interface PhaseStartedEvent {
   agent_id: string | null;
@@ -299,6 +311,10 @@ export interface GateOpenedEvent {
   type: "gate.opened";
 }
 export interface GateOpenedPayload {
+  /**
+   * @minItems 1
+   */
+  actions: ["approve" | "revise" | "edit" | "abort", ...("approve" | "revise" | "edit" | "abort")[]];
   artifact_id: string | null;
   gate: GateKind;
   gate_id: string;
@@ -329,7 +345,7 @@ export interface LoopIterationEvent {
 }
 export interface LoopIterationPayload {
   iteration: number;
-  limit: number;
+  limit: number | null;
   loop: "review" | "qa" | "revise";
 }
 export interface GuardrailBlockedEvent {
@@ -455,11 +471,17 @@ export interface CiStatusPayload {
 export interface RunRecord {
   base_branch: string;
   budget_usd: number;
+  checkpoint: Checkpoint | null;
+  checkpoint_data: {
+    [k: string]: unknown;
+  };
   created_at: string;
   id: string;
   last_seq: number;
   max_parallel_devs: number;
+  mode: "live" | "scripted" | "demo";
   phase: Phase | null;
+  pr_url: string | null;
   repo: string;
   requirement: string;
   spent_usd: number;

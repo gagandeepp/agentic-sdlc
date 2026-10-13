@@ -17,7 +17,6 @@ from pymongo.errors import PyMongoError
 
 from app.events.models import (
     EVENT_ADAPTER,
-    FINAL_EVENT_TYPES,
     PAYLOAD_BY_TYPE,
     TERMINAL_EVENT_TYPES,
     ContractModel,
@@ -89,7 +88,7 @@ class EventBus:
                     await self._store.release_seq(run_id, seq)
                     raise
             self._publish(event)
-            if event.type in FINAL_EVENT_TYPES:
+            if event.type in TERMINAL_EVENT_TYPES:
                 self._closed.add(run_id)
             try:
                 await self._store.apply_projection(event)
