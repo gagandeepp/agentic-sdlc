@@ -16,6 +16,7 @@ from app.events.models import (
 from app.gitops.local import create_local_remote
 from app.settings import Settings
 from app.store.mongo import NewRun
+from tests.factories import make_event
 from tests.run_helpers import approve, events_of, gate_id, running, wait_for
 
 KEYS = {
@@ -180,3 +181,45 @@ async def test_startup_recovery_and_resume_restores_spend(settings: Settings) ->
         assert app.state.registry.budget(resumed).spent_usd == 0.4
         await gate_id(app, resumed, "requirements")
         assert (await client.post(f"/api/runs/{resumed}/abort")).json()["status"] == "aborted"
+
+
+async def test_concurrent_aborts_record_the_abort_once(app: FastAPI, client: AsyncClient) -> None:
+    run = await _scripted(client)
+    await gate_id(app, run["id"], "requirements")
+    first, second = await asyncio.gather(
+        client.post(f"/api/runs/{run['id']}/abort"), client.post(f"/api/runs/{run['id']}/abort")
+    )
+    assert {first.status_code, second.status_code} <= {200, 409}
+    events = await events_of(app, run["id"])
+    assert [e.type for e in events].count("run.aborted") == 1
+    assert (await client.get(f"/api/runs/{run['id']}")).json()["status"] == "aborted"
+
+
+async def test_recovery_leaves_finished_runs_alone(settings: Settings) -> None:
+    async with running(settings) as (app, _):
+        store, bus = app.state.store, app.state.bus
+        run = await store.create_run(NewRun(requirement="r", repo="o/r", mode="scripted"))
+        await bus.emit(
+            run.id, "run.status_changed", RunStatusChangedPayload(status=RunStatus.RUNNING)
+        )
+        # The terminal event landed but its projection update didn't (a crash in between).
+        aborted = make_event(
+            "run.aborted", {"by": "user"}, run_id=run.id, seq=await store.next_seq(run.id)
+        )
+        await store.insert_event(aborted)
+    async with running(settings) as (app, _):
+        events = await events_of(app, run.id)
+        assert events[-1].type == "run.aborted"
+
+
+async def test_feedback_after_the_budget_is_spent_says_so(
+    app: FastAPI, client: AsyncClient
+) -> None:
+    run = await _scripted(client)
+    gate = await gate_id(app, run["id"], "requirements")
+    app.state.registry.budget(run["id"]).exhausted = True
+    url = f"/api/runs/{run['id']}/gates/{gate}"
+    response = await client.post(url, json={"action": "revise", "feedback": "Split story 2"})
+    assert response.status_code == 409 and "budget" in response.json()["detail"]
+    assert app.state.gates.is_open(run["id"])
+    assert (await client.post(url, json={"action": "abort"})).status_code == 200

@@ -201,27 +201,33 @@ class Pipeline:
             await self._emit("run.status_changed", running)
             async with self._clock.running():
                 pr_url = await self._steps()
-            await self._emit("run.completed", RunCompletedPayload(pr_url=pr_url), phase=Phase.DONE)
+            await self._end("run.completed", RunCompletedPayload(pr_url=pr_url), Phase.DONE)
         except RunStop as stop:
-            await self._emit(stop.event_type, stop.payload, phase=stop.phase or self._phase)
+            await self._end(stop.event_type, stop.payload, stop.phase or self._phase)
         except TimeoutError:
             minutes = self._d.settings.run_timeout_s / 60
-            await self._fail(
-                "timeout", f"the run used its {minutes:g}-minute limit (gate and CI waits excluded)"
-            )
+            detail = f"the run used its {minutes:g}-minute limit (gate and CI waits excluded)"
+            await self._end("run.failed", RunFailedPayload(reason="timeout", detail=detail))
         except asyncio.CancelledError:
             if self._control.stop_reason == "abort":
                 aborted = RunAbortedPayload(by="user", reason="aborted while running")
-                await self._emit("run.aborted", aborted, phase=self._phase)
+                await self._end("run.aborted", aborted, self._phase)
             else:
                 interrupted = RunInterruptedPayload(last_checkpoint=self._checkpoint)
-                await self._emit("run.interrupted", interrupted, phase=self._phase)
+                await self._end("run.interrupted", interrupted, self._phase)
             raise
         except Exception as exc:
             log.exception("run %s failed", self.run_id)
-            await self._fail("error", f"{type(exc).__name__}: {exc}")
+            detail = f"{type(exc).__name__}: {exc}"[:500]
+            await self._end("run.failed", RunFailedPayload(reason="error", detail=detail))
         finally:
             self._d.registry.revoke_run(self.run_id)
+
+    async def _end(
+        self, event_type: str, payload: ContractModel, phase: Phase | None = None
+    ) -> None:
+        """Record how the run ended, even if the task is cancelled again meanwhile."""
+        await asyncio.shield(self._emit(event_type, payload, phase=phase or self._phase))
 
     async def _steps(self) -> str:
         if self._checkpoint is None:
@@ -607,7 +613,9 @@ class Pipeline:
             latest = await self._d.artifacts.latest(self.run_id, kind)
             if latest is not None:
                 text = await self._publishable(latest.markdown, f"docs/sdlc/{name}")
-                self._repo.write_file(f"docs/sdlc/{self.run_id}/{name}", text)
+                # Off the event loop: the tree is agent-controlled, so never risk blocking it.
+                path = f"docs/sdlc/{self.run_id}/{name}"
+                await asyncio.to_thread(self._repo.write_file, path, text)
         await self._repo.commit_all(self._commit_message("docs: add SDLC artifacts"))
         await self._push()
         title = title or f"agentic-sdlc run {self.run_id}"
@@ -709,10 +717,6 @@ class Pipeline:
         self._state.active_s = self._clock.used_s()
         await self._d.store.set_checkpoint(self.run_id, checkpoint, asdict(self._state))
         self._checkpoint = checkpoint
-
-    async def _fail(self, reason: str, detail: str) -> None:
-        failed = RunFailedPayload(reason=reason, detail=detail[:500])
-        await self._emit("run.failed", failed, phase=self._phase)
 
     async def _emit(
         self, event_type: str, payload: ContractModel, *, phase: Phase | None = None

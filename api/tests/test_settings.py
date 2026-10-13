@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from app.settings import Settings
 
@@ -30,3 +31,10 @@ def test_tests_can_ignore_env_files(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert settings.agent_anthropic_key is None
     assert settings.proxy_port == 0
     assert settings.agent_user is None
+
+
+def test_only_one_live_run_at_a_time() -> None:
+    # Every agent runs as the one `agent` uid, and cleanup kills all of its processes, so two
+    # live runs would kill and tamper with each other's agents.
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, max_concurrent_runs=2)
