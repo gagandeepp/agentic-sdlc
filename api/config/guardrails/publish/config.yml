@@ -1,0 +1,13 @@
+# Everything the orchestrator sends to GitHub: the PR title and body, and docs/sdlc files.
+# `omit` deletes the matched text (leaked keys and tokens, <script> tags, javascript: URLs).
+rails:
+  config:
+    injection_detection:
+      injections:
+        - secrets
+        - active_content
+      action: omit
+      yara_path: __YARA_DIR__
+  output:
+    flows:
+      - injection detection
