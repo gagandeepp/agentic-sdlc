@@ -1,10 +1,17 @@
-"""Bare repositories on disk that stand in for GitHub (tests and the keyless scripted runs)."""
+"""Bare repositories on disk that stand in for GitHub (tests and the keyless scripted runs).
+
+Pushes to a local path run the remote's own hooks and ignore `-c core.hooksPath`, so a remote
+must never be writable by agents: its directory is API-owned and group read-only, and the repo
+keeps new files that way (`core.sharedRepository=0640`).
+"""
 
 import os
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+
+from app.gitops.repo import GIT_DIR_MODE, lock_down
 
 _SEED_ENV = {
     "GIT_CONFIG_NOSYSTEM": "1",
@@ -36,5 +43,8 @@ def create_local_remote(source: Path, remote: Path, *, branch: str = "main") -> 
         _git(work, "add", "--all")
         _git(work, "commit", "--quiet", "-m", "Initial commit")
         remote.parent.mkdir(parents=True, exist_ok=True)
+        os.chmod(remote.parent, GIT_DIR_MODE)
         _git(work, "clone", "--quiet", "--bare", str(work), str(remote))
+        _git(remote, "config", "core.sharedRepository", "0640")
+    lock_down(remote)
     return remote.as_uri()

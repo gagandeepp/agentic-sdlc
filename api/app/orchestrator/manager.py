@@ -132,6 +132,11 @@ class RunManager:
             decision.markdown if decision.action == "edit" else None,
         )
         gate = self._gates.validate(run_id, gate_id, decision)
+        if (decision.feedback or decision.markdown) and self._budget_spent(run_id):
+            # Neither the input check nor the agent that would act on the text can run.
+            raise RunRejected(
+                409, "the run's budget is spent: approve (the run then stops) or abort this gate"
+            )
         texts: list[tuple[InputSource, str | None]] = [
             ("gate-feedback", decision.feedback),
             ("artifact-edit", decision.markdown),
@@ -149,9 +154,12 @@ class RunManager:
     async def abort(self, run_id: str) -> None:
         live = self._live.get(run_id)
         if live is not None:
-            live.control.stop_reason = "abort"
-            live.task.cancel()
-            await asyncio.gather(live.task, return_exceptions=True)
+            # Cancel once: a second cancel would interrupt the run while it records its end.
+            if live.control.stop_reason is None:
+                live.control.stop_reason = "abort"
+                live.task.cancel()
+            # wait(), unlike gather(), doesn't cancel the run if this request goes away.
+            await asyncio.wait([live.task])
             return
         async with self._lock:
             run = await self._require_run(run_id)
@@ -177,16 +185,21 @@ class RunManager:
     async def recover(self) -> None:
         """Runs a previous process left mid-flight become interrupted (resumable)."""
         for run in await self._store.list_runs_in(ACTIVE_STATUSES):
-            if run.id not in self._live:
-                interrupted = RunInterruptedPayload(last_checkpoint=run.checkpoint)
-                await self._bus.emit(run.id, "run.interrupted", interrupted)
+            if run.id in self._live:
+                continue
+            if await self._store.last_event_is_terminal(run.id):
+                continue  # it ended; only its projection update was lost
+            interrupted = RunInterruptedPayload(last_checkpoint=run.checkpoint)
+            await self._bus.emit(run.id, "run.interrupted", interrupted)
 
     async def shutdown(self) -> None:
         live = list(self._live.values())
         for entry in live:
-            entry.control.stop_reason = "shutdown"
-            entry.task.cancel()
-        await asyncio.gather(*(entry.task for entry in live), return_exceptions=True)
+            if entry.control.stop_reason is None:  # an abort in progress finishes as an abort
+                entry.control.stop_reason = "shutdown"
+                entry.task.cancel()
+        if live:
+            await asyncio.wait([entry.task for entry in live])
 
     # --- internals ------------------------------------------------------------------------------
 
@@ -201,6 +214,9 @@ class RunManager:
             if problem is not None:
                 raise RunRejected(400, problem)
         return settings.agent_anthropic_key
+
+    def _budget_spent(self, run_id: str) -> bool:
+        return self._registry.is_open(run_id) and self._registry.budget(run_id).exhausted
 
     def _require_capacity(self) -> None:
         if len(self._live) >= self._settings.max_concurrent_runs:

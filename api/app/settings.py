@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -41,5 +41,7 @@ class Settings(BaseSettings):
     default_repo: str = "gagandeepp/agentic-sdlc-sandbox"
     github_api_url: str = "https://api.github.com"
     github_clone_base: str = "https://github.com"
-    max_concurrent_runs: int = 1
+    # One agent uid serves every run and is wiped after each session, so runs can't overlap
+    # until each gets its own uid.
+    max_concurrent_runs: int = Field(default=1, ge=1, le=1)
     scripted_agent_delay_s: float = 1.0  # keyless demo runs: time for the GUI to show each agent

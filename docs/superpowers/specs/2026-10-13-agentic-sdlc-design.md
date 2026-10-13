@@ -61,7 +61,7 @@ With Bash enabled, an agent's shell inherits its env, so a prompt injection coul
   - **User input:** the requirement and gate feedback get a Claude Haiku `self check input` plus context-bloat limits, metered through the proxy as a "guardrails" agent.
   - **Publish:** everything sent to GitHub passes NeMo `injection detection` in `omit` mode with our YARA rules for leaked keys and tokens (Anthropic, GitHub, AWS) and active content (`<script>`, `javascript:`). A removal emits `guardrail.blocked(redacted-before-publish)`; if the rails fail, nothing is published. (Presidio was dropped: NeMo's integration requires the ~560 MB `en_core_web_lg` model. NeMo's built-in `xss`/`template` rules would delete legitimate `{{ }}` and link text in omit mode.)
 
-  File tools are confined to the workspace by a Python `realpath`/`commonpath` check, which also denies `.github/workflows/**`. Each denial emits a `guardrail.blocked` event. These are backstops; the boundary is the container plus the separate uid. Use `permission_mode="dontAsk"` with scoped `allowed_tools` (`bypassPermissions` refuses to run as root).
+  File tools are confined to the workspace by a Python `realpath`/`commonpath` check, which also denies writes anywhere under `.github/` (any case: workflows and composite actions run in CI). Each denial emits a `guardrail.blocked` event. These are backstops; the boundary is the container plus the separate uid. Use `permission_mode="dontAsk"` with scoped `allowed_tools` (`bypassPermissions` refuses to run as root).
 - Hosted mode: Cloud Run `max-instances=1`, 1 live run at a time (others get "busy" and can still watch replays), per-IP rate limit, shallow clone, and a repo size cap.
 
 ## Workflow state machine

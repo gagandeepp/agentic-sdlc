@@ -98,7 +98,9 @@ def evaluate_path(tool_name: str, tool_input: Mapping[str, Any], workspace: Path
         if not _inside(resolved, root):
             return Verdict(allowed=False, rules=("outside-workspace",))
         relative = resolved.relative_to(root).as_posix()
-        if tool_name in _WRITE_TOOLS and relative.startswith(".github/workflows"):
+        top = relative.split("/", 1)[0].lower()
+        if tool_name in _WRITE_TOOLS and top == ".github":
+            # Workflows and actions run in CI with the repo's secrets; pushes refuse any of it.
             return Verdict(allowed=False, rules=("workflow-file",))
     return ALLOW
 

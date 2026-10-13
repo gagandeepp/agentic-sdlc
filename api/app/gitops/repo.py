@@ -15,6 +15,7 @@ git command. Therefore:
 import asyncio
 import os
 import shutil
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -130,9 +131,15 @@ def write_inside(root: Path, relative: str, text: str) -> None:
             directory.unlink()
         directory.mkdir(exist_ok=True)
     target = directory / path.parts[-1]
-    if target.is_symlink():
+    if target.is_symlink() or (target.exists() and not target.is_file()):
+        # Symlinks would redirect the write; a FIFO or device would block or misbehave.
         target.unlink()
-    fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o664)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_NONBLOCK
+    fd = os.open(target, flags, 0o664)
+    if not stat.S_ISREG(os.fstat(fd).st_mode):  # replaced between the check and the open
+        os.close(fd)
+        raise ValueError(f"not a regular file: {relative!r}")
+    os.set_blocking(fd, True)
     with os.fdopen(fd, "w", encoding="utf-8") as handle:
         handle.write(text)
 

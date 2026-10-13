@@ -489,3 +489,23 @@ async def test_abort_while_an_agent_runs(h: Harness) -> None:
     events = await h.stop("abort")
     assert events[-1].type == "run.aborted" and events[-1].payload.by == "user"
     assert not h.registry.is_open(h.run.id)
+
+
+async def test_a_second_cancel_cannot_lose_the_terminal_event(h: Harness) -> None:
+    h.start()
+    await h.open_gate(REQ)
+    assert h.task is not None
+    h.control.stop_reason = "abort"
+    h.task.cancel()
+    for _ in range(3):  # let the abort handler start writing its event
+        await asyncio.sleep(0)
+    h.task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await h.task
+    async with asyncio.timeout(5):
+        while True:
+            record = await h.store.get_run(h.run.id)
+            if record is not None and record.status is RunStatus.ABORTED:
+                break
+            await asyncio.sleep(0.01)
+    assert (await h.events())[-1].type == "run.aborted"

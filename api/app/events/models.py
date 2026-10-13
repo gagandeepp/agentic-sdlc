@@ -257,6 +257,17 @@ class GateOpenedPayload(ContractModel):
     artifact_id: str | None = None
     reason: str | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _default_actions(cls, data: Any) -> Any:
+        # Events stored before gates listed their actions get the actions their kind allowed.
+        if not isinstance(data, dict) or "actions" in data:
+            return data
+        actions = ["approve", "revise", "abort"]
+        if data.get("gate") in (GateKind.REQUIREMENTS, GateKind.DESIGN):
+            actions.insert(2, "edit")
+        return {**data, "actions": actions}
+
 
 class GateResolvedPayload(ContractModel):
     gate_id: str
