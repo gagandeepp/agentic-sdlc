@@ -21,6 +21,7 @@ def test_schema_exposes_run_event_union_and_run_record() -> None:
     defs = schema["$defs"]
     assert schema["properties"]["event"] == {"$ref": "#/$defs/RunEvent"}
     assert schema["properties"]["run"] == {"$ref": "#/$defs/RunRecord"}
+    assert schema["properties"]["artifact"] == {"$ref": "#/$defs/ArtifactRecord"}
     assert len(defs["RunEvent"]["oneOf"]) == len(EVENT_CLASSES) == 30
     assert {"RunStatus", "Phase", "AgentUsageEvent", "AgentUsagePayload"} <= set(defs)
 

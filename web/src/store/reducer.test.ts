@@ -34,6 +34,26 @@ describe('reduceEvents over the fake run', () => {
 })
 
 describe('reduceEvent', () => {
+  test('a stopped run drops its open gate and idles agents that were still working', () => {
+    const callIndex = fixtureEvents.findIndex((e) => e.type === 'agent.tool_call')
+    const busy = reduceEvents(initialRunState(), fixtureEvents.slice(0, callIndex + 1))
+    const gate = fixtureEvents.find((e) => e.type === 'gate.opened')!
+    const waiting = reduceEvent(busy, { ...gate, seq: busy.lastSeq + 1 })
+    expect(waiting.openGate).not.toBeNull()
+    const interrupted = reduceEvent(waiting, {
+      run_id: waiting.runId!,
+      seq: waiting.lastSeq + 1,
+      ts: '2026-10-13T10:00:00Z',
+      type: 'run.interrupted',
+      phase: null,
+      agent_id: null,
+      payload: { last_checkpoint: 'requirements_drafted' },
+    })
+    expect(interrupted.status).toBe('interrupted')
+    expect(interrupted.openGate).toBeNull()
+    expect(interrupted.agents.ba?.status).toBe('idle')
+  })
+
   test('is idempotent: replaying already-seen events returns the same state object', () => {
     expect(reduceEvents(final, fixtureEvents)).toBe(final)
   })

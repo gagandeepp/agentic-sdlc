@@ -23,6 +23,7 @@ from app.events.models import (
     BudgetUpdatedPayload,
     CiStatusPayload,
     ContractModel,
+    GateAction,
     GateKind,
     GateOpenedPayload,
     GateResolvedPayload,
@@ -109,7 +110,12 @@ def _handoff(src: str, dst: str, summary: str, artifact_id: str | None = None) -
 
 
 def _gate(gate_id: str, kind: GateKind, artifact_id: str) -> GateOpenedPayload:
-    return GateOpenedPayload(gate_id=gate_id, gate=kind, artifact_id=artifact_id, reason=None)
+    actions: list[GateAction] = ["approve", "revise", "abort"]
+    if kind is not GateKind.RELEASE:
+        actions.insert(2, "edit")
+    return GateOpenedPayload(
+        gate_id=gate_id, gate=kind, actions=actions, artifact_id=artifact_id, reason=None
+    )
 
 
 def _approve(gate_id: str) -> GateResolvedPayload:

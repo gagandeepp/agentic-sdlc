@@ -3,11 +3,12 @@ import { ApiError, eventsUrl, getRun } from '../lib/api'
 import { useRunStore } from '../store/runStore'
 import type { RunEvent } from '../types/api'
 
-const TERMINAL = new Set<RunEvent['type']>(['run.completed', 'run.failed', 'run.aborted', 'run.interrupted'])
+const TERMINAL = new Set<RunEvent['type']>(['run.completed', 'run.failed', 'run.aborted'])
 const RETRY_MS = [500, 1_000, 2_000, 5_000, 10_000]
 
 /**
- * Streams a run's events into the run store. EventSource reconnects on its own after network
+ * Streams a run's events into the run store until the run completes, fails or is aborted (an
+ * interrupted run can be resumed, so its stream stays open). EventSource reconnects on its own after network
  * drops (sending Last-Event-ID), but gives up for good on a non-200 reply (proxy error, API
  * restart, database outage); then this hook reopens from the last seen seq with backoff, or
  * reports a run that does not exist. The reducer ignores already-seen seqs, so resumes never

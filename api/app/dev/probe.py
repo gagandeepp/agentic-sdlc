@@ -73,6 +73,7 @@ async def prepare_probe(
             repo="local/sample_repo",
             budget_usd=budget_usd,
             max_parallel_devs=1,
+            mode="demo",
         )
     )
     run_dir = settings.workspace_root / "runs" / run.id

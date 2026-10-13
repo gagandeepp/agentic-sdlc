@@ -1,9 +1,9 @@
 """MongoDB persistence: run records (with a live projection) and the append-only event log."""
 
 import secrets
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterable
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 from pymongo import ASCENDING, DESCENDING, ReturnDocument
@@ -14,10 +14,12 @@ from app.events.models import (
     TERMINAL_EVENT_TYPES,
     AgentUsageEvent,
     BudgetUpdatedEvent,
+    Checkpoint,
     GateOpenedEvent,
     GateResolvedEvent,
     Phase,
     PhaseStartedEvent,
+    PrOpenedEvent,
     RunEvent,
     RunStatus,
     RunStatusChangedEvent,
@@ -35,12 +37,16 @@ class RunNotFound(Exception):
     pass
 
 
+RunMode = Literal["live", "scripted", "demo"]
+
+
 class NewRun(BaseModel):
-    requirement: str = Field(min_length=1)
+    requirement: str = Field(min_length=1, max_length=4000)
     repo: str = Field(min_length=1)
     base_branch: str = "main"
     budget_usd: float = Field(default=5.0, gt=0)
     max_parallel_devs: int = Field(default=3, ge=1, le=8)
+    mode: RunMode = "live"
 
 
 _ALWAYS_SERIALIZED = ConfigDict(json_schema_serialization_defaults_required=True)
@@ -64,8 +70,12 @@ class RunRecord(BaseModel):
     base_branch: str
     budget_usd: float
     max_parallel_devs: int
+    mode: RunMode = "live"
     status: RunStatus = RunStatus.PENDING
     phase: Phase | None = None
+    checkpoint: Checkpoint | None = None
+    checkpoint_data: dict[str, Any] = Field(default_factory=dict)
+    pr_url: str | None = None
     spent_usd: float = 0.0
     tokens: TokenTotals = Field(default_factory=TokenTotals)
     last_seq: int = 0
@@ -79,6 +89,7 @@ def new_run_id() -> str:
 
 class MongoStore:
     def __init__(self, db: AsyncDatabase[dict[str, Any]]) -> None:
+        self._db = db
         self._runs = db["runs"]
         self._events = db["events"]
         self._indexes_ready = False
@@ -109,6 +120,31 @@ class MongoStore:
     async def list_runs(self, limit: int = 50) -> list[RunRecord]:
         cursor = self._runs.find().sort("created_at", DESCENDING).limit(limit)
         return [_run_from_doc(doc) async for doc in cursor]
+
+    @property
+    def database(self) -> AsyncDatabase[dict[str, Any]]:
+        return self._db
+
+    async def list_runs_in(self, statuses: Iterable[RunStatus]) -> list[RunRecord]:
+        cursor = self._runs.find({"status": {"$in": [status.value for status in statuses]}})
+        return [_run_from_doc(doc) async for doc in cursor]
+
+    async def set_checkpoint(
+        self, run_id: str, checkpoint: Checkpoint, data: dict[str, Any]
+    ) -> None:
+        """Record a resume point. Unlike the projection this raises: resume depends on it."""
+        result = await self._runs.update_one(
+            {"_id": run_id},
+            {
+                "$set": {
+                    "checkpoint": checkpoint.value,
+                    "checkpoint_data": data,
+                    "updated_at": datetime.now(UTC),
+                }
+            },
+        )
+        if result.matched_count == 0:
+            raise RunNotFound(run_id)
 
     async def next_seq(self, run_id: str) -> int:
         doc = await self._runs.find_one_and_update(
@@ -167,6 +203,8 @@ class MongoStore:
                     "tokens.cache_creation_input_tokens": usage.cache_creation_input_tokens,
                     "tokens.cache_read_input_tokens": usage.cache_read_input_tokens,
                 }
+            case PrOpenedEvent():
+                sets["pr_url"] = event.payload.url
             case _ if event.type in _TERMINAL_STATUS:
                 sets["status"] = _TERMINAL_STATUS[event.type].value
         update: dict[str, Any] = {"$set": sets}

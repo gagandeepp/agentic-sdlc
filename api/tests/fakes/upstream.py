@@ -129,14 +129,14 @@ def error_reply(status: int, headers: dict[str, str] | None = None) -> Reply:
     return reply
 
 
-def json_reply(output_tokens: int = 9) -> Reply:
+def json_reply(output_tokens: int = 9, text: str = "hi") -> Reply:
     def reply(model: str) -> Response:
         return JSONResponse(
             {
                 "id": "msg_json",
                 "type": "message",
                 "model": model,
-                "content": [{"type": "text", "text": "hi"}],
+                "content": [{"type": "text", "text": text}],
                 "usage": {"input_tokens": 40, "output_tokens": output_tokens},
             }
         )

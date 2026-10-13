@@ -49,3 +49,22 @@ test('reports a run that does not exist instead of waiting forever', async () =>
   await waitFor(() => expect(useRunStore.getState().connection).toBe('not_found'))
   expect(FakeEventSource.instances).toHaveLength(1)
 })
+
+test('keeps listening after run.interrupted so a resumed run streams in', async () => {
+  renderHook(() => useRunEvents('run_demo0001'))
+  const source = FakeEventSource.latest()
+  const created = fixtureEvents[0]!
+  source.emit(created)
+  source.emit({
+    run_id: created.run_id,
+    seq: 2,
+    ts: '2026-10-13T10:00:00Z',
+    type: 'run.interrupted',
+    phase: null,
+    agent_id: null,
+    payload: { last_checkpoint: null },
+  })
+  await waitFor(() => expect(useRunStore.getState().state.status).toBe('interrupted'))
+  expect(source.closed).toBe(false)
+  expect(useRunStore.getState().connection).not.toBe('ended')
+})

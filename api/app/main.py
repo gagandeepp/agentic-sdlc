@@ -24,7 +24,11 @@ from app.llm.proxy import create_proxy_app
 from app.llm.registry import ProxyRegistry
 from app.llm.server import EmbeddedServer
 from app.llm.sink import bus_usage_sink
+from app.orchestrator.gates import GateBroker
+from app.orchestrator.input_guard import ProxyInputGuard
+from app.orchestrator.manager import RunManager
 from app.settings import Settings
+from app.store.artifacts import ArtifactStore
 from app.store.mongo import MongoStore
 
 log = logging.getLogger(__name__)
@@ -41,14 +45,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             tz_aware=True,
         )
         store = MongoStore(client[settings.mongo_db])
+        bus = EventBus(store, queue_size=settings.subscriber_queue_size)
+        artifacts = ArtifactStore(client[settings.mongo_db], bus)
+        mongo_up = True
         try:
             await store.ensure_indexes()
+            await artifacts.ensure_indexes()
         except PyMongoError as exc:
             # Start anyway: /api/health reports the outage, requests get 503, and
             # MongoStore.create_run retries the indexes once Mongo is back.
+            mongo_up = False
             log.warning("MongoDB unavailable at startup: %s", exc)
         background: set[asyncio.Task[None]] = set()
-        bus = EventBus(store, queue_size=settings.subscriber_queue_size)
         http = httpx.AsyncClient(timeout=httpx.Timeout(600.0, connect=10.0))
         registry = ProxyRegistry(load_pricing())
         proxy = EmbeddedServer(
@@ -65,6 +73,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             bus=bus, registry=registry, guardrails=guardrails, settings=settings,
             proxy_base_url=proxy.base_url,
         )  # fmt: skip
+        roles = load_roles()
+        gates = GateBroker(bus)
+        guard = ProxyInputGuard(
+            guardrails=guardrails, registry=registry, bus=bus, http=http,
+            proxy_base_url=proxy.base_url,
+        )  # fmt: skip
+        manager = RunManager(
+            bus=bus, store=store, artifacts=artifacts, gates=gates, runner=runner, roles=roles,
+            guard=guard, guardrails=guardrails, registry=registry, settings=settings, http=http,
+        )  # fmt: skip
+        if mongo_up:
+            try:
+                await manager.recover()
+            except PyMongoError as exc:
+                log.warning("could not mark interrupted runs at startup: %s", exc)
         if settings.agent_user is None:
             log.warning(
                 "AGENT_USER is not set: agent sessions run as the API user (reduced isolation)"
@@ -72,16 +95,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.mongo = client
         app.state.store = store
         app.state.bus = bus
+        app.state.artifacts = artifacts
         app.state.http = http
         app.state.registry = registry
         app.state.proxy = proxy
         app.state.guardrails = guardrails
         app.state.runner = runner
-        app.state.roles = load_roles()
+        app.state.roles = roles
+        app.state.gates = gates
+        app.state.manager = manager
         app.state.background_tasks = background
         try:
             yield
         finally:
+            # Runs record run.interrupted first, while Mongo, the proxy and httpx still work.
+            await manager.shutdown()
             for task in background:
                 task.cancel()
             await asyncio.gather(*background, return_exceptions=True)

@@ -9,6 +9,7 @@ from typing import Any
 from pydantic import TypeAdapter
 
 from app.events.models import EVENT_ADAPTER
+from app.store.artifacts import ArtifactRecord
 from app.store.mongo import RunRecord
 
 
@@ -36,6 +37,7 @@ def api_json_schema() -> dict[str, Any]:
         [
             ("event", "serialization", EVENT_ADAPTER),
             ("run", "serialization", TypeAdapter(RunRecord)),
+            ("artifact", "serialization", TypeAdapter(ArtifactRecord)),
         ]
     )
     defs = dict(top["$defs"])
@@ -44,10 +46,11 @@ def api_json_schema() -> dict[str, Any]:
         "title": "Api",
         "type": "object",
         "additionalProperties": False,
-        "required": ["event", "run"],
+        "required": ["event", "run", "artifact"],
         "properties": {
             "event": {"$ref": "#/$defs/RunEvent"},
             "run": refs[("run", "serialization")],
+            "artifact": refs[("artifact", "serialization")],
         },
         "$defs": defs,
     }

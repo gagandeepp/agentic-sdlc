@@ -9,6 +9,7 @@ from app.events.models import (
     TRUNCATION_MARK,
     AgentToolResultPayload,
     AgentUsageEvent,
+    Checkpoint,
 )
 from tests.factories import make_event
 
@@ -140,3 +141,22 @@ def test_small_tool_call_is_untouched() -> None:
     )
     assert event.payload.input == {"command": "ls"}
     assert event.payload.input_truncated is False
+
+
+def test_interrupted_carries_a_checkpoint_and_gates_list_their_actions() -> None:
+    event = make_event("run.interrupted", {"last_checkpoint": "design_drafted"})
+    assert event.payload.last_checkpoint is Checkpoint.DESIGN_DRAFTED  # type: ignore[union-attr]
+    with pytest.raises(ValidationError):
+        make_event("gate.opened", {"gate_id": "g", "gate": "escalation", "actions": []})
+    gate = make_event(
+        "gate.opened", {"gate_id": "g", "gate": "escalation", "actions": ["approve", "abort"]}
+    )
+    assert gate.payload.actions == ["approve", "abort"]  # type: ignore[union-attr]
+    loop = make_event("loop.iteration", {"loop": "revise", "iteration": 2, "limit": None})
+    assert loop.payload.limit is None  # type: ignore[union-attr]
+
+
+def test_only_completed_failed_and_aborted_end_a_run() -> None:
+    assert TERMINAL_EVENT_TYPES == {"run.completed", "run.failed", "run.aborted"}
+    order = list(Checkpoint)
+    assert (order[0], order[-1]) == (Checkpoint.CLONED, Checkpoint.DONE)

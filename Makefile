@@ -1,4 +1,4 @@
-.PHONY: up down fmt lint test types fixtures
+.PHONY: up down fmt lint test types fixtures smoke
 
 # corepack ships with Node and honours web/package.json's packageManager pin
 PNPM ?= corepack pnpm
@@ -26,3 +26,6 @@ types:
 
 fixtures:
 	cd api && uv run python -m app.dev.export_fixture > ../fixtures/demo-runs/fake-basic.jsonl
+
+smoke:
+	cd api && RUN_LIVE=1 uv run pytest tests/live -q -p no:warnings

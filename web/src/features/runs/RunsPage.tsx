@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { formatUsd } from '../../lib/format'
 import { listRuns, startFakeRun } from '../../lib/api'
 import type { RunRecord } from '../../types/api'
+import { NewRunForm } from './NewRunForm'
 
 export function RunsPage() {
   const [runs, setRuns] = useState<RunRecord[] | null>(null)
@@ -26,6 +27,7 @@ export function RunsPage() {
 
   return (
     <section className="mx-auto max-w-5xl p-6">
+      <NewRunForm />
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">Runs</h1>
         <button

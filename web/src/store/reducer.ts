@@ -87,6 +87,23 @@ function updateAgent(
 const setStatus = (state: RunViewState, agentId: string | null, status: AgentStatus) =>
   updateAgent(state, agentId, (a) => ({ ...a, status }))
 
+/** Agents still marked busy when a run stops are no longer working. */
+function settleAgents(agents: Record<string, AgentView>): Record<string, AgentView> {
+  const settled: Record<string, AgentView> = {}
+  for (const [id, agent] of Object.entries(agents)) {
+    settled[id] = agent.status === 'done' || agent.status === 'failed' ? agent : { ...agent, status: 'idle' }
+  }
+  return settled
+}
+
+const stopped = (state: RunViewState, status: RunStatus): RunViewState => ({
+  ...state,
+  status,
+  activeAgentId: null,
+  openGate: null,
+  agents: settleAgents(state.agents),
+})
+
 export function reduceEvent(state: RunViewState, event: RunEvent): RunViewState {
   if (event.seq <= state.lastSeq) return state // already applied (reconnect overlap)
   const next: RunViewState = {
@@ -108,11 +125,11 @@ export function reduceEvent(state: RunViewState, event: RunEvent): RunViewState 
     case 'run.completed':
       return { ...next, status: 'completed', prUrl: event.payload.pr_url ?? next.prUrl, activeAgentId: null }
     case 'run.failed':
-      return { ...next, status: 'failed', activeAgentId: null }
+      return stopped(next, 'failed')
     case 'run.aborted':
-      return { ...next, status: 'aborted', activeAgentId: null }
+      return stopped(next, 'aborted')
     case 'run.interrupted':
-      return { ...next, status: 'interrupted', activeAgentId: null }
+      return stopped(next, 'interrupted')
     case 'phase.started':
       return { ...next, phase: event.phase ?? next.phase }
     case 'agent.started': {
