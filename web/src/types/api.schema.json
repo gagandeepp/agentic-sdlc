@@ -686,6 +686,53 @@
       "title": "ArtifactPayload",
       "type": "object"
     },
+    "ArtifactRecord": {
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "edited_by_user": {
+          "default": false,
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ArtifactKind"
+        },
+        "markdown": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "run_id",
+        "kind",
+        "version",
+        "title",
+        "data",
+        "markdown",
+        "edited_by_user",
+        "created_at"
+      ],
+      "title": "ArtifactRecord",
+      "type": "object"
+    },
     "ArtifactRevisedEvent": {
       "additionalProperties": false,
       "properties": {
@@ -2764,6 +2811,9 @@
   },
   "additionalProperties": false,
   "properties": {
+    "artifact": {
+      "$ref": "#/$defs/ArtifactRecord"
+    },
     "event": {
       "$ref": "#/$defs/RunEvent"
     },
@@ -2773,7 +2823,8 @@
   },
   "required": [
     "event",
-    "run"
+    "run",
+    "artifact"
   ],
   "title": "Api",
   "type": "object"

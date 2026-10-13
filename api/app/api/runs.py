@@ -10,6 +10,7 @@ from app.api.sse import sse_stream
 from app.events.bus import EventBus
 from app.events.models import EVENT_ADAPTER
 from app.settings import Settings
+from app.store.artifacts import ArtifactRecord, ArtifactStore
 from app.store.mongo import MongoStore, RunRecord
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
@@ -86,3 +87,27 @@ async def export_events(run_id: str, store: StoreDep) -> StreamingResponse:
             yield EVENT_ADAPTER.dump_json(event) + b"\n"
 
     return StreamingResponse(lines(), media_type="application/x-ndjson")
+
+
+def get_artifacts(request: Request) -> ArtifactStore:
+    artifacts: ArtifactStore = request.app.state.artifacts
+    return artifacts
+
+
+ArtifactsDep = Annotated[ArtifactStore, Depends(get_artifacts)]
+
+
+@router.get("/{run_id}/artifacts")
+async def list_artifacts(
+    run_id: str, store: StoreDep, artifacts: ArtifactsDep
+) -> list[ArtifactRecord]:
+    await _require_run(store, run_id)
+    return await artifacts.list_for_run(run_id)
+
+
+@router.get("/{run_id}/artifacts/{artifact_id}")
+async def get_artifact(run_id: str, artifact_id: str, artifacts: ArtifactsDep) -> ArtifactRecord:
+    artifact = await artifacts.get(artifact_id)
+    if artifact is None or artifact.run_id != run_id:
+        raise HTTPException(status_code=404, detail="artifact not found")
+    return artifact

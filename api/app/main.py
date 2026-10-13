@@ -25,6 +25,7 @@ from app.llm.registry import ProxyRegistry
 from app.llm.server import EmbeddedServer
 from app.llm.sink import bus_usage_sink
 from app.settings import Settings
+from app.store.artifacts import ArtifactStore
 from app.store.mongo import MongoStore
 
 log = logging.getLogger(__name__)
@@ -41,14 +42,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             tz_aware=True,
         )
         store = MongoStore(client[settings.mongo_db])
+        bus = EventBus(store, queue_size=settings.subscriber_queue_size)
+        artifacts = ArtifactStore(client[settings.mongo_db], bus)
         try:
             await store.ensure_indexes()
+            await artifacts.ensure_indexes()
         except PyMongoError as exc:
             # Start anyway: /api/health reports the outage, requests get 503, and
             # MongoStore.create_run retries the indexes once Mongo is back.
             log.warning("MongoDB unavailable at startup: %s", exc)
         background: set[asyncio.Task[None]] = set()
-        bus = EventBus(store, queue_size=settings.subscriber_queue_size)
         http = httpx.AsyncClient(timeout=httpx.Timeout(600.0, connect=10.0))
         registry = ProxyRegistry(load_pricing())
         proxy = EmbeddedServer(
@@ -72,6 +75,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.mongo = client
         app.state.store = store
         app.state.bus = bus
+        app.state.artifacts = artifacts
         app.state.http = http
         app.state.registry = registry
         app.state.proxy = proxy

@@ -1,5 +1,7 @@
 /* Generated from api/app by 'make types'. Do not edit. */
 
+export type ArtifactKind =
+  "requirements" | "design" | "dev_result" | "integration" | "review" | "test_report" | "release_plan";
 export type RunEvent =
   | RunCreatedEvent
   | RunStatusChangedEvent
@@ -46,14 +48,27 @@ export type Checkpoint =
   | "pr_opened"
   | "done";
 export type Role = "ba" | "architect" | "dev" | "integrator" | "reviewer" | "qa" | "devops" | "guardrails";
-export type ArtifactKind =
-  "requirements" | "design" | "dev_result" | "integration" | "review" | "test_report" | "release_plan";
 export type GateKind = "requirements" | "design" | "release" | "escalation";
 export type RunStatus1 = "pending" | "running" | "waiting_gate" | "completed" | "failed" | "aborted" | "interrupted";
 
 export interface Api {
+  artifact: ArtifactRecord;
   event: RunEvent;
   run: RunRecord;
+}
+export interface ArtifactRecord {
+  created_at: string;
+  data: {
+    [k: string]: unknown;
+  };
+  edited_by_user: boolean;
+  id: string;
+  kind: ArtifactKind;
+  markdown: string;
+  run_id: string;
+  title: string;
+  version: number;
+  [k: string]: unknown;
 }
 export interface RunCreatedEvent {
   agent_id: string | null;
