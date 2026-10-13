@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 
+from app.agents.runner import SdkAgentRunner
 from app.api.runs import router as runs_router
 from app.dev.routes import router as dev_router
 from app.events.bus import EventBus
@@ -59,6 +60,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await guardrails.self_test()
         except GuardrailsUnavailable as exc:
             log.error("guardrails failed their self-test (%s); agent commands will be denied", exc)
+        runner = SdkAgentRunner(
+            bus=bus, registry=registry, guardrails=guardrails, settings=settings,
+            proxy_base_url=proxy.base_url,
+        )  # fmt: skip
+        if settings.agent_user is None:
+            log.warning(
+                "AGENT_USER is not set: agent sessions run as the API user (reduced isolation)"
+            )
         app.state.mongo = client
         app.state.store = store
         app.state.bus = bus
@@ -66,6 +75,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.registry = registry
         app.state.proxy = proxy
         app.state.guardrails = guardrails
+        app.state.runner = runner
         app.state.background_tasks = background
         try:
             yield
