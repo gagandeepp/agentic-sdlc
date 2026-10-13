@@ -125,3 +125,9 @@ def test_unknown_tool_names_are_rejected() -> None:
                 "output": "requirements",
             }
         )
+
+
+def test_every_role_may_install_dependencies_but_not_browse() -> None:
+    for role in load_roles().values():
+        assert "don't browse the web" in role.system_prompt
+        assert "no network access" not in role.system_prompt
