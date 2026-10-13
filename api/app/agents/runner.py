@@ -64,6 +64,16 @@ class IsolationRequired(RuntimeError):
     """A Bash-capable role was asked to run without a separate agent uid."""
 
 
+def isolation_problem(role: RoleConfig, settings: Settings) -> str | None:
+    """Why `role` may not run under `settings`, or None if it may."""
+    if "Bash" in role.tools and not settings.agent_user and not settings.allow_unisolated_bash:
+        return (
+            f"the {role.role} role runs shell commands, which needs AGENT_USER "
+            "(set ALLOW_UNISOLATED_BASH=true to accept the risk in local development)"
+        )
+    return None
+
+
 @dataclass(frozen=True)
 class AgentSpec:
     run_id: str
@@ -218,16 +228,10 @@ class SdkAgentRunner:
             stderr=lambda line: log.debug("[%s/%s] %s", spec.run_id, spec.agent_id, line),
         )
 
-    def _require_isolation(self, role: RoleConfig) -> None:
-        settings = self._settings
-        if "Bash" in role.tools and not settings.agent_user and not settings.allow_unisolated_bash:
-            raise IsolationRequired(
-                f"the {role.role} role runs shell commands, which needs AGENT_USER "
-                "(set ALLOW_UNISOLATED_BASH=true to accept the risk in local development)"
-            )
-
     async def run(self, spec: AgentSpec) -> AgentOutcome:
-        self._require_isolation(spec.role)
+        problem = isolation_problem(spec.role, self._settings)
+        if problem is not None:
+            raise IsolationRequired(problem)
 
         async def emit(event_type: str, payload: ContractModel) -> None:
             await self._bus.emit(

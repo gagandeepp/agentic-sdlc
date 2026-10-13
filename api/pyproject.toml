@@ -40,6 +40,8 @@ asyncio_default_fixture_loop_scope = "function"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# Fixture repo copied into agent workspaces: a separate project, not part of the API.
+extend-exclude = ["app/dev/sample_repo"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC", "RUF"]
@@ -49,6 +51,7 @@ ignore = ["E501"]  # ruff format owns line length
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
+exclude = ["^app/dev/sample_repo/"]
 
 [[tool.mypy.overrides]]
 module = ["testcontainers.*"]

@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 
+from app.agents.roles import load_roles
 from app.agents.runner import SdkAgentRunner
 from app.api.runs import router as runs_router
 from app.dev.routes import router as dev_router
@@ -76,6 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.proxy = proxy
         app.state.guardrails = guardrails
         app.state.runner = runner
+        app.state.roles = load_roles()
         app.state.background_tasks = background
         try:
             yield
