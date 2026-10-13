@@ -13,6 +13,7 @@ from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 
 from app.api.runs import router as runs_router
+from app.dev.routes import router as dev_router
 from app.events.bus import EventBus
 from app.settings import Settings
 from app.store.mongo import MongoStore
@@ -73,6 +74,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse({"status": "ok", "mongo": "ok"})
 
     app.include_router(runs_router)
+    if settings.enable_dev_routes:
+        app.include_router(dev_router)
     return app
 
 

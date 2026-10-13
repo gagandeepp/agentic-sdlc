@@ -1,4 +1,4 @@
-.PHONY: up down fmt lint test types
+.PHONY: up down fmt lint test types fixtures
 
 # corepack ships with Node and honours web/package.json's packageManager pin
 PNPM ?= corepack pnpm
@@ -23,3 +23,6 @@ test:
 types:
 	cd api && uv run python -m app.schema > ../web/src/types/api.schema.json
 	cd web && $(PNPM) gen:types
+
+fixtures:
+	cd api && uv run python -m app.dev.export_fixture > ../fixtures/demo-runs/fake-basic.jsonl
