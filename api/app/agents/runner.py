@@ -56,6 +56,12 @@ HAIKU_MODEL = "claude-haiku-5-5"
 DISALLOWED_TOOLS = ["WebFetch", "WebSearch", "Task"]
 OutcomeStatus = Literal["ok", "invalid_output", "api_error", "timeout", "budget_exhausted", "error"]
 COMPACTION_NOTE = "[Claude Code compacted the conversation context]"
+# The SDK passes the API process's environment to the CLI; blank anything secret it may hold.
+SCRUBBED_ENV = ("AGENT_ANTHROPIC_KEY", "AGENT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN")
+
+
+class IsolationRequired(RuntimeError):
+    """A Bash-capable role was asked to run without a separate agent uid."""
 
 
 @dataclass(frozen=True)
@@ -185,6 +191,7 @@ class SdkAgentRunner:
             "CLAUDE_CONFIG_DIR": str(spec.config_dir),
             "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
             "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+            **dict.fromkeys(SCRUBBED_ENV, ""),
         }
         cli_path: Path | None = None
         if self._settings.agent_user:
@@ -211,7 +218,17 @@ class SdkAgentRunner:
             stderr=lambda line: log.debug("[%s/%s] %s", spec.run_id, spec.agent_id, line),
         )
 
+    def _require_isolation(self, role: RoleConfig) -> None:
+        settings = self._settings
+        if "Bash" in role.tools and not settings.agent_user and not settings.allow_unisolated_bash:
+            raise IsolationRequired(
+                f"the {role.role} role runs shell commands, which needs AGENT_USER "
+                "(set ALLOW_UNISOLATED_BASH=true to accept the risk in local development)"
+            )
+
     async def run(self, spec: AgentSpec) -> AgentOutcome:
+        self._require_isolation(spec.role)
+
         async def emit(event_type: str, payload: ContractModel) -> None:
             await self._bus.emit(
                 spec.run_id, event_type, payload, phase=spec.phase, agent_id=spec.agent_id

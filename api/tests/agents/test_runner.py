@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any, ClassVar
@@ -18,7 +19,13 @@ from pydantic import SecretStr
 
 from app.agents.artifacts import Requirements
 from app.agents.roles import load_roles
-from app.agents.runner import AgentSpec, SdkAgentRunner, classify, translate
+from app.agents.runner import (
+    AgentSpec,
+    IsolationRequired,
+    SdkAgentRunner,
+    classify,
+    translate,
+)
 from app.events.bus import EventBus
 from app.events.models import Phase, Role
 from app.guardrails.service import GuardrailsService
@@ -231,6 +238,28 @@ async def test_options_carry_the_isolation_contract(runner_env: dict[str, Any]) 
     isolated_options = isolated.build_options(spec, grant, hooks={})
     assert str(isolated_options.cli_path) == "/usr/local/bin/agent-cli"
     assert isolated_options.env["CLAUDE_AGENT_REAL_CLI"].endswith("_bundled/claude")
+
+
+async def test_bash_roles_refuse_to_run_without_uid_isolation(runner_env: dict[str, Any]) -> None:
+    dev = load_roles()[Role.DEV]
+    spec = dataclasses.replace(_spec(runner_env), role=dev, agent_id="dev", phase=Phase.DEV)
+    with pytest.raises(IsolationRequired):
+        await _runner(runner_env, [_result()]).run(spec)
+    events = [e async for e in runner_env["store"].list_events_after(runner_env["run"].id)]
+    assert events == []
+    opted_in = runner_env["settings"].model_copy(update={"allow_unisolated_bash": True})
+    runner = _runner({**runner_env, "settings": opted_in}, [_result(structured_output=None)])
+    assert (await runner.run(spec)).status == "invalid_output"  # it ran
+
+
+async def test_known_secret_variables_are_blanked_for_the_cli(runner_env: dict[str, Any]) -> None:
+    spec = _spec(runner_env)
+    grant = runner_env["registry"].grant(
+        run_id=spec.run_id, agent_id="ba", phase=Phase.BA, allowed_models={"claude-sonnet-5-5"}
+    )
+    env = _runner(runner_env, []).build_options(spec, grant, hooks={}).env
+    for name in ("AGENT_ANTHROPIC_KEY", "AGENT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"):
+        assert env[name] == ""
 
 
 async def test_a_session_that_overruns_its_timeout_is_cut_off(runner_env: dict[str, Any]) -> None:

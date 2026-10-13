@@ -29,3 +29,5 @@ class Settings(BaseSettings):
     llm_upstream: str = "https://api.anthropic.com"
     agent_user: str | None = None
     agent_cli_path: Path = Path("/usr/local/bin/agent-cli")
+    # Local development only: let Bash-capable roles run as the API user (no uid boundary).
+    allow_unisolated_bash: bool = False
