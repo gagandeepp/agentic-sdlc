@@ -50,6 +50,14 @@ async def guardrails() -> GuardrailsService:
             {"file_path": ".github/workflows/ci.yml", "old_string": "a", "new_string": "b"},
             "workflow-file",
         ),
+        # Pushes refuse any .github/ change, so agents learn at once instead of at push time.
+        ("Write", {"file_path": ".github/dependabot.yml", "content": "x"}, "workflow-file"),
+        (
+            "Write",
+            {"file_path": ".github/actions/setup/action.yml", "content": "x"},
+            "workflow-file",
+        ),
+        ("Write", {"file_path": ".GitHub/workflows/ci.yml", "content": "x"}, "workflow-file"),
     ],
 )
 def test_file_tools_are_confined_to_the_workspace(

@@ -1,3 +1,4 @@
+import asyncio
 import os
 import stat
 import subprocess
@@ -216,3 +217,42 @@ async def test_push_refuses_any_ci_configuration_however_it_is_named(
     await repo.commit_all("ci")
     with pytest.raises(PushRefused, match="workflows"):
         await repo.push("sdlc/run_1", base=base, expected=None)
+
+
+async def test_writes_replace_a_planted_fifo_instead_of_blocking(
+    tmp_path: Path, remote: str
+) -> None:
+    repo = await _clone(tmp_path, remote)
+    relative = "docs/sdlc/run_1/requirements.md"
+    target = repo.worktree / relative
+    target.parent.mkdir(parents=True)
+    os.mkfifo(target)  # opening a FIFO with no reader for writing blocks forever
+    try:
+        await asyncio.wait_for(asyncio.to_thread(repo.write_file, relative, "# R\n"), 2)
+    finally:
+        if stat.S_ISFIFO(target.lstat().st_mode):  # release a writer stuck on the FIFO
+            os.close(os.open(target, os.O_RDONLY | os.O_NONBLOCK))
+    assert target.is_file() and target.read_text() == "# R\n"
+
+
+async def test_local_remotes_stay_api_owned_after_pushes(tmp_path: Path) -> None:
+    # A group-writable bare remote would let an agent plant a hook that a later local push
+    # runs as the API user (local transports ignore -c core.hooksPath).
+    previous = os.umask(0o002)  # the container's API umask
+    try:
+        source = tmp_path / "source"
+        source.mkdir()
+        (source / "a.txt").write_text("a\n")
+        bare = tmp_path / "remotes" / "r.git"
+        url = create_local_remote(source, bare)
+        repo = await _clone(tmp_path, url)
+        base = await repo.head()
+        await repo.start_branch("sdlc/run_1", base)
+        (repo.worktree / "b.txt").write_text("b\n")
+        await repo.commit_all("c")
+        await repo.push("sdlc/run_1", base=base, expected=None)
+    finally:
+        os.umask(previous)
+    assert stat.S_IMODE(bare.parent.stat().st_mode) == 0o2750
+    for path in [bare, *bare.rglob("*")]:
+        assert not path.lstat().st_mode & (stat.S_IWGRP | stat.S_IWOTH), path

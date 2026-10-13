@@ -11,13 +11,13 @@ RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
     && ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack
 # /work is sticky: agents (group sdlc) can't rename or replace what the API owns there.
-# runs/ and git/ are API-owned and group read-only; each run's repo/ inside is agent-writable.
+# runs/, git/ and remotes/ are API-owned and group read-only; each run's repo/ is agent-writable.
 RUN groupadd --system sdlc \
     && useradd --create-home --groups sdlc appuser \
     && useradd --create-home --groups sdlc --shell /usr/sbin/nologin agent \
     && install -d -o root -g sdlc -m 3775 /work \
     && install -d -o agent -g sdlc -m 2775 /work/agent-home \
-    && install -d -o appuser -g sdlc -m 2750 /work/runs /work/git
+    && install -d -o appuser -g sdlc -m 2750 /work/runs /work/git /work/remotes
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 COPY pyproject.toml uv.lock .python-version ./
