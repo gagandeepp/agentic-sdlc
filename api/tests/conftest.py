@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -26,12 +27,14 @@ def mongo_uri() -> Iterator[str]:
 
 
 @pytest.fixture
-def settings(mongo_uri: str) -> Settings:
+def settings(mongo_uri: str, tmp_path: Path) -> Settings:
     return Settings(
+        _env_file=None,
         mongo_uri=mongo_uri,
         mongo_db=f"test_{uuid.uuid4().hex[:8]}",
         enable_dev_routes=True,
         sse_ping_seconds=0.2,
+        workspace_root=tmp_path / "work",
     )
 
 

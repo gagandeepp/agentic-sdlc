@@ -1,0 +1,8 @@
+role: dev
+model: claude-sonnet-5-5
+effort: medium
+tools: [Read, Write, Edit, Glob, Grep, Bash]
+max_turns: 80
+timeout_s: 1800
+prompt: dev.md
+output: dev_result

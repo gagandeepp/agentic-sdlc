@@ -83,7 +83,9 @@ async def test_events_jsonl_export(app: FastAPI, client: AsyncClient) -> None:
 
 
 async def test_database_outage_returns_503_json() -> None:
-    app = create_app(Settings(mongo_uri="mongodb://127.0.0.1:1", mongo_timeout_ms=200))
+    app = create_app(
+        Settings(_env_file=None, mongo_uri="mongodb://127.0.0.1:1", mongo_timeout_ms=200)
+    )
     async with LifespanManager(app):  # must start even though Mongo is down
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
             response = await c.get("/api/runs")

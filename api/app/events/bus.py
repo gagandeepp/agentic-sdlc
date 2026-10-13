@@ -17,6 +17,7 @@ from pymongo.errors import PyMongoError
 
 from app.events.models import (
     EVENT_ADAPTER,
+    FINAL_EVENT_TYPES,
     PAYLOAD_BY_TYPE,
     TERMINAL_EVENT_TYPES,
     ContractModel,
@@ -44,6 +45,7 @@ class EventBus:
         self._queue_size = queue_size
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._subscribers: defaultdict[str, set[_Subscriber]] = defaultdict(set)
+        self._closed: set[str] = set()
 
     async def emit(
         self,
@@ -53,7 +55,7 @@ class EventBus:
         *,
         phase: Phase | None = None,
         agent_id: str | None = None,
-    ) -> RunEvent:
+    ) -> RunEvent | None:
         expected = PAYLOAD_BY_TYPE.get(event_type)
         if expected is None:
             raise ValueError(f"unknown event type {event_type!r}")
@@ -62,6 +64,10 @@ class EventBus:
                 f"{event_type} expects {expected.__name__}, got {type(payload).__name__}"
             )
         async with self._locks[run_id]:
+            if run_id in self._closed:
+                # Late usage or text from a session that outlived its run.
+                log.debug("dropping %s for finished run %s", event_type, run_id)
+                return None
             seq = await self._store.next_seq(run_id)
             event = EVENT_ADAPTER.validate_python(
                 {
@@ -83,6 +89,8 @@ class EventBus:
                     await self._store.release_seq(run_id, seq)
                     raise
             self._publish(event)
+            if event.type in FINAL_EVENT_TYPES:
+                self._closed.add(run_id)
             try:
                 await self._store.apply_projection(event)
             except PyMongoError:

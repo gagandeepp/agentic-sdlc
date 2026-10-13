@@ -12,7 +12,9 @@ async def test_health_ok(client: AsyncClient) -> None:
 
 
 async def test_health_degraded_when_mongo_unreachable() -> None:
-    app = create_app(Settings(mongo_uri="mongodb://127.0.0.1:1", mongo_timeout_ms=200))
+    app = create_app(
+        Settings(_env_file=None, mongo_uri="mongodb://127.0.0.1:1", mongo_timeout_ms=200)
+    )
     async with LifespanManager(app):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
             response = await c.get("/api/health")

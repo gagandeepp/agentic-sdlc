@@ -1,0 +1,11 @@
+# Bash commands proposed by agents, checked before they run (PreToolUse hook).
+rails:
+  config:
+    injection_detection:
+      injections:
+        - shell_danger
+      action: reject
+      yara_path: __YARA_DIR__
+  output:
+    flows:
+      - injection detection

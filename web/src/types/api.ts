@@ -211,6 +211,7 @@ export interface AgentToolCallPayload {
   input: {
     [k: string]: unknown;
   };
+  input_truncated: boolean;
   name: string;
   tool_use_id: string;
 }

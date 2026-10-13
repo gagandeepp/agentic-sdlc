@@ -22,7 +22,7 @@ Greenfield project. Container runtime: Python 3.12, Node 22 (web build only).
 | Target repo stacks (v1) | Python + Node/TS toolchains in the image |
 | Parallel devs | Yes: git worktrees, max 3 (configurable). File ownership declared by Architect; tasks with overlapping files are serialized; **Integrator** agent resolves leftover conflicts |
 | Artifacts | Structured JSON in Mongo (rendered in GUI) **and** markdown in PR under `docs/sdlc/<run-id>/` |
-| Guardrails | Per-run $ budget cap, loop limits (Dev⇄Review ≤3, QA→Dev ≤2, then escalate to gate), bash command policy, wall-clock timeout (~50 min run, per-phase caps) |
+| Guardrails | Per-run $ budget cap, loop limits (Dev⇄Review ≤3, QA→Dev ≤2, then escalate to gate), **NeMo Guardrails** on Bash commands, tool results, user input and published output, wall-clock timeout (~50 min run excluding gate waits, per-phase caps) |
 | Engine | Event-sourced, in-process asyncio state machine in FastAPI. One event log feeds both live view and replay |
 | Store | MongoDB (local container; Atlas M0 when hosted) |
 | Frontend | React + Vite + TS, React Flow (`@xyflow/react`), Recharts, Tailwind + shadcn/ui; "mission control" layout |
@@ -45,9 +45,21 @@ Greenfield project. Container runtime: Python 3.12, Node 22 (web build only).
 ### Security model (key design point)
 
 With Bash enabled, an agent's shell inherits its env, so a prompt injection could exfiltrate keys. Therefore:
-- **Anthropic key**: agents get `ANTHROPIC_BASE_URL` pointing to an in-process **CredentialProxy** route with a per-run nonce, plus a dummy key. The proxy maps nonce → real key (in memory) and forwards to Anthropic, streaming. It also **parses `message_start`/`message_delta` usage** on every request. That makes it the authoritative token/cost tap, including subagent calls, and enforces a **hard budget cap** (stronger than the SDK's client-side `max_budget_usd`, which we also set).
-- **GitHub token**: used only by `GitOps` Python code. Clone, push, and PR use a per-command `http.extraHeader` and are never written to `.git/config`. Agents cannot push; DevOps produces structured PR content and the orchestrator executes it.
-- **Bash policy**: a `PreToolUse` hook on `Bash` denies dangerous patterns (writes outside the workspace, `curl|sh`, `git push`, `env`/`printenv`, reading `/proc/*/environ`, `sudo`, etc.). Each denial emits a `guardrail.blocked` event. Substring checks are a backstop, not a sandbox. The real isolation is the per-run workspace dir and Cloud Run's gVisor sandbox. Use `permission_mode="dontAsk"` with scoped `allowed_tools` (`bypassPermissions` refuses to run as root).
+- **Separate uid** (revised 2026-10-13): the Claude Code CLI runs as a dedicated `agent` user through a sudo wrapper (`cli_path`) that passes only an allowlist of env vars (`env -i`). An agent can't read the API process's `/proc/*/environ`, the secrets files, or the git process env, and every `agent` process is killed after each session. The API process scrubs key env vars at entrypoint.
+- **Anthropic key**: agents get `ANTHROPIC_BASE_URL` pointing at a **CredentialProxy** on its own loopback port (no path prefix), plus a per-session placeholder bearer token (`ANTHROPIC_AUTH_TOKEN`). The proxy maps token → real key (in memory) and forwards to Anthropic, streaming. Only `POST /v1/messages` (metered), `POST /v1/messages/count_tokens` and `/api/hello` are routed; everything else is 404, and each grant has a model allowlist. The proxy **parses `message_start`/`message_delta` usage** on every request. That makes it the authoritative token/cost tap, including subagent calls, and enforces a **hard budget cap** (stronger than the SDK's client-side `max_budget_usd`, which we also set).
+- **GitHub token**: used only by `GitOps` Python code, through a one-shot credential helper in the git process env. It is never written to `.git/config`, and network git operations run only when no `agent` process exists. Agents cannot push; DevOps produces structured PR content and the orchestrator executes it.
+- **Git dir outside the agent's reach** (added 2026-10-13, security review): the agent uid can write the working tree (shared `sdlc` group), so it could plant `.git/hooks/*` or `.git/config` entries (`core.fsmonitor`, filters, credential helpers) that would run as the API user on the next git command. Therefore:
+  - GitOps clones with `--separate-git-dir` into an API-owned directory outside the working tree (group `sdlc`, read-only to the group: `2750`/`0640`). Agents can still run `git diff`/`log`/`show`, but they cannot write the git dir, so agents never commit.
+  - Every API-side git command sets `GIT_DIR` and `GIT_WORK_TREE` explicitly, ignoring any `.git` file the agent might replace. It also sets `GIT_CONFIG_NOSYSTEM=1` and `GIT_CONFIG_GLOBAL=/dev/null`, and passes `-c core.hooksPath=/dev/null -c core.fsmonitor=false`.
+  - The API never executes anything from the working tree.
+- **Local development without the agent uid**: Bash-capable roles (Dev, Reviewer, QA, DevOps) refuse to start unless `AGENT_USER` is set, or `ALLOW_UNISOLATED_BASH=true` explicitly accepts the risk. The runner also blanks known secret variables in the CLI's environment.
+- **Guardrails: NeMo Guardrails** (`check_async`, rails only, no main-LLM call) on four surfaces:
+  - **Bash commands:** a `PreToolUse` hook runs custom YARA rules through NeMo injection detection. It fails closed.
+  - **Tool results:** a `PostToolUse` scan for indirect prompt injection. It fails open with a warning event.
+  - **User input:** the requirement and gate feedback get a Claude Haiku `self check input` plus context-bloat limits, metered through the proxy as a "guardrails" agent.
+  - **Publish:** everything sent to GitHub gets Presidio masking of secrets/PII and XSS/template injection removal.
+
+  File tools are confined to the workspace by a Python `realpath`/`commonpath` check, which also denies `.github/workflows/**`. Each denial emits a `guardrail.blocked` event. These are backstops; the boundary is the container plus the separate uid. Use `permission_mode="dontAsk"` with scoped `allowed_tools` (`bypassPermissions` refuses to run as root).
 - Hosted mode: Cloud Run `max-instances=1`, 1 live run at a time (others get "busy" and can still watch replays), per-IP rate limit, shallow clone, and a repo size cap.
 
 ## Workflow state machine

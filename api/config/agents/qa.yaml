@@ -1,0 +1,8 @@
+role: qa
+model: claude-sonnet-5-5
+effort: medium
+tools: [Read, Write, Edit, Glob, Grep, Bash]
+max_turns: 60
+timeout_s: 1500
+prompt: qa.md
+output: test_report

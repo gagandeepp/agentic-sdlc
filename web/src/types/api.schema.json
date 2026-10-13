@@ -363,6 +363,10 @@
           "additionalProperties": true,
           "type": "object"
         },
+        "input_truncated": {
+          "default": false,
+          "type": "boolean"
+        },
         "name": {
           "type": "string"
         },
@@ -373,7 +377,8 @@
       "required": [
         "tool_use_id",
         "name",
-        "input"
+        "input",
+        "input_truncated"
       ],
       "title": "AgentToolCallPayload",
       "type": "object"
