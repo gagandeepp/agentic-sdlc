@@ -19,7 +19,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const listRuns = () => request<RunRecord[]>('/api/runs')
 
+export const getRun = (runId: string) => request<RunRecord>(`/api/runs/${encodeURIComponent(runId)}`)
+
 export const startFakeRun = (speed = 2) =>
   request<RunRecord>(`/api/dev/fake-runs?speed=${speed}`, { method: 'POST' })
 
-export const eventsUrl = (runId: string) => `${API_BASE}/api/runs/${encodeURIComponent(runId)}/events`
+export const eventsUrl = (runId: string, after = 0) =>
+  `${API_BASE}/api/runs/${encodeURIComponent(runId)}/events${after > 0 ? `?after=${after}` : ''}`

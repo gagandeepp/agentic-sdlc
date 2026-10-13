@@ -11,6 +11,7 @@ export function RunPage() {
   const { runId = '' } = useParams()
   useRunEvents(runId)
   const run = useRunStore((s) => s.state)
+  const connection = useRunStore((s) => s.connection)
   const [agentFilter, setAgentFilter] = useState<string | null>(null)
   const [hideUsage, setHideUsage] = useState(true)
   const events = useMemo(
@@ -18,12 +19,26 @@ export function RunPage() {
     [run.timeline, agentFilter, hideUsage],
   )
 
+  if (connection === 'not_found') {
+    return (
+      <section className="mx-auto max-w-5xl p-6">
+        <h1 className="text-xl font-semibold">Run not found</h1>
+        <p className="mt-2 text-slate-400">There is no run with id {runId}.</p>
+      </section>
+    )
+  }
+
   return (
     <section className="grid h-[calc(100vh-3.5rem)] grid-rows-[auto_1fr_auto]">
       <header className="flex flex-wrap items-center gap-3 border-b border-slate-800 px-6 py-3">
         <h1 className="text-lg font-semibold">{run.requirement ?? runId}</h1>
         <span className="rounded bg-slate-800 px-2 py-0.5 text-xs">{run.status}</span>
         {run.phase && <span className="text-xs text-slate-400">phase: {run.phase}</span>}
+        {connection === 'reconnecting' && (
+          <span role="status" className="text-xs text-amber-300">
+            reconnecting…
+          </span>
+        )}
         {run.prUrl && (
           <a href={run.prUrl} target="_blank" rel="noreferrer" className="ml-auto text-sm text-sky-300 hover:underline">
             Pull request

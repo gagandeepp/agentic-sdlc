@@ -11,14 +11,28 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-test('renders a live run: header, agent cards, metrics, and timeline count', async () => {
+function renderRun(runId: string) {
   render(
-    <MemoryRouter initialEntries={['/runs/run_demo0001']}>
+    <MemoryRouter initialEntries={[`/runs/${runId}`]}>
       <Routes>
         <Route path="/runs/:runId" element={<RunPage />} />
       </Routes>
     </MemoryRouter>,
   )
+}
+
+test('shows "Run not found" for an unknown run', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('{"detail":"run not found"}', { status: 404 })),
+  )
+  renderRun('run_missing')
+  act(() => FakeEventSource.latest().fail())
+  expect(await screen.findByRole('heading', { name: 'Run not found' })).toBeInTheDocument()
+})
+
+test('renders a live run: header, agent cards, metrics, and timeline count', async () => {
+  renderRun('run_demo0001')
   const source = FakeEventSource.latest()
   act(() => {
     for (const event of fixtureEvents) source.emit(event)
