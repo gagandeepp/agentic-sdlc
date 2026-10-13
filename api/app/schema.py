@@ -23,7 +23,9 @@ def _strip_property_titles(node: Any) -> Any:
     props = out.get("properties")
     if isinstance(props, dict):
         out["properties"] = {
-            name: {k: v for k, v in prop.items() if k != "title"} if isinstance(prop, dict) else prop
+            name: {k: v for k, v in prop.items() if k != "title"}
+            if isinstance(prop, dict)
+            else prop
             for name, prop in props.items()
         }
     return out
