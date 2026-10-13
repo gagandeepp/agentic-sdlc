@@ -1,3 +1,6 @@
+import os
+import stat
+
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
@@ -29,6 +32,19 @@ class StubRunner:
 def _with_key(app: FastAPI) -> None:
     key = SecretStr("sk-ant-test-probe")
     app.state.settings = app.state.settings.model_copy(update={"agent_anthropic_key": key})
+
+
+async def test_workspace_copy_uses_the_process_umask_not_source_modes(app: FastAPI) -> None:
+    # In the container the API runs with umask 002 so the agent uid (group sdlc) can write.
+    _with_key(app)
+    previous = os.umask(0o002)
+    try:
+        ctx = await prepare_probe(app.state, role=Role.BA, requirement="x")
+    finally:
+        os.umask(previous)
+    paths = [ctx.spec.workspace, *ctx.spec.workspace.rglob("*")]
+    assert all(path.stat().st_mode & stat.S_IWGRP for path in paths)
+    assert not any("__pycache__" in path.parts for path in paths)
 
 
 class ExplodingRunner:

@@ -37,6 +37,19 @@ class ProbeUnavailable(Exception):
     pass
 
 
+def _copy_repo(source: Path, target: Path) -> None:
+    """Copy without source modes, so the API's umask 002 and the setgid `sdlc` group apply."""
+    for path in sorted(source.rglob("*")):
+        if "__pycache__" in path.parts:
+            continue
+        destination = target / path.relative_to(source)
+        if path.is_dir():
+            destination.mkdir(parents=True, exist_ok=True)
+        else:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(path, destination)
+
+
 @dataclass(frozen=True)
 class ProbeContext:
     run: RunRecord
@@ -64,7 +77,8 @@ async def prepare_probe(
     )
     run_dir = settings.workspace_root / "runs" / run.id
     workspace = run_dir / "repo"
-    shutil.copytree(SAMPLE_REPO, workspace)
+    workspace.mkdir(parents=True)
+    _copy_repo(SAMPLE_REPO, workspace)
     (run_dir / "outside.txt").write_text("This file is outside the agent workspace.\n")
     state.registry.open_run(run.id, settings.agent_anthropic_key, budget_usd)
     spec = AgentSpec(
