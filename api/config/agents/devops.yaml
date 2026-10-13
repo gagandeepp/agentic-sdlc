@@ -1,0 +1,8 @@
+role: devops
+model: claude-haiku-5-5
+effort: low
+tools: [Read, Glob, Grep, Bash]
+max_turns: 30
+timeout_s: 600
+prompt: devops.md
+output: release_plan

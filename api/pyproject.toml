@@ -24,6 +24,8 @@ dev = [
   "ruff>=0.17",
   "mypy>=2.4",
   "types-pyyaml>=6.0.12.20260906",
+  "jsonschema>=4.26.0",
+  "types-jsonschema>=4.26.0.20261006",
 ]
 
 [tool.uv]
