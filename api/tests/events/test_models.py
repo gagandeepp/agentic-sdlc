@@ -160,3 +160,10 @@ def test_only_completed_failed_and_aborted_end_a_run() -> None:
     assert TERMINAL_EVENT_TYPES == {"run.completed", "run.failed", "run.aborted"}
     order = list(Checkpoint)
     assert (order[0], order[-1]) == (Checkpoint.CLONED, Checkpoint.DONE)
+
+
+def test_gates_recorded_before_actions_existed_still_load() -> None:
+    old = {"gate_id": "g", "gate": "release", "artifact_id": None, "reason": None}
+    assert make_event("gate.opened", old).payload.actions == ["approve", "revise", "abort"]  # type: ignore[union-attr]
+    design = make_event("gate.opened", {**old, "gate": "design"})
+    assert design.payload.actions == ["approve", "revise", "edit", "abort"]  # type: ignore[union-attr]
