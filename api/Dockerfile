@@ -11,4 +11,4 @@ RUN useradd --create-home appuser && chown -R appuser /app
 USER appuser
 ENV PATH="/app/.venv/bin:$PATH" PORT=8080
 EXPOSE 8080
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --timeout-graceful-shutdown 5"]
