@@ -12,7 +12,7 @@ A team of Claude agents takes a free-text requirement to a GitHub pull request, 
 Requires Docker.
 
 ```bash
-cp .env.example .env
+cp .env.example .env   # then set MONGO_URI to your MongoDB Atlas connection string
 docker compose up --build
 ```
 
@@ -22,7 +22,7 @@ Open http://localhost:5173. API health: http://localhost:8080/api/health.
 
 | | |
 |---|---|
-| API | `docker compose up -d mongo`, then `cd api && uv sync && uv run uvicorn app.main:app --reload --port 8080` |
+| API | `cd api && uv sync && uv run uvicorn app.main:app --reload --port 8080` (uses `MONGO_URI` from `.env`, i.e. Atlas) |
 | Web | `cd web && corepack pnpm install && corepack pnpm dev` (proxies `/api` to :8080) |
 | Tests | `make test` (API tests start MongoDB with testcontainers, so Docker must be running) |
 | Lint / types | `make lint` |
